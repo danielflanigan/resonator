@@ -64,9 +64,10 @@ class TransmissionKnownEqualCouplings(lmfit.model.Model):
     """
 
     def __init__(self, *args, **kwargs):
-        def func(frequency, resonance_frequency, internal_loss, coupling_loss, baseline):
+        def func(frequency, resonance_frequency, internal_loss, coupling_loss, baseline_real, baseline_imag):
             detuning = frequency / resonance_frequency - 1
-            return baseline / (1 + (internal_loss + 2j * detuning) / (2 * coupling_loss))
+            return ((baseline_real + 1j * baseline_imag) /
+                    (1 + (internal_loss + 2j * detuning) / (2 * coupling_loss)))
         super(TransmissionKnownEqualCouplings, self).__init__(func=func, *args, **kwargs)
 
     def guess(self, data, frequency=None, coupling_loss=None):
@@ -80,8 +81,10 @@ class TransmissionKnownEqualCouplings(lmfit.model.Model):
         :param coupling_loss: the coupling loss for both ports -- this is not an optional parameter
         :return: lmfit.Parameters
         """
-        resonance_frequency_guess = frequency[np.argmax(np.abs(data))]  # guess that the resonance is the highest point
-        baseline_guess = np.max(np.abs(data))
+        max_index = np.argmax(np.abs(data))
+        resonance_frequency_guess = frequency[max_index]  # guess that the resonance is the highest point
+        baseline_real_guess = data[max_index].real
+        baseline_imag_guess = data[max_index].imag
         width = frequency.size // 10
         gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
         gaussian /= np.sum(gaussian)  # not necessary
@@ -93,7 +96,8 @@ class TransmissionKnownEqualCouplings(lmfit.model.Model):
         internal_plus_coupling = linewidth / resonance_frequency_guess
         internal_loss_guess = internal_plus_coupling - coupling_loss
         params = self.make_params(resonance_frequency=resonance_frequency_guess, internal_loss=internal_loss_guess,
-                                  coupling_loss=coupling_loss, baseline=baseline_guess)
+                                  coupling_loss=coupling_loss, baseline_real=baseline_real_guess,
+                                  baseline_imag=baseline_imag_guess)
         params['{}resonance_frequency'.format(self.prefix)].set(min=frequency.min(), max=frequency.max())
         params['{}internal_loss'.format(self.prefix)].set(min=1e-12, max=1)
         params['{}coupling_loss'.format(self.prefix)].set(vary=False)
