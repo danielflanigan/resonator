@@ -13,9 +13,9 @@ class TransmissionEqualCouplingsCalibrated(lmfit.model.Model):
     and that the forward transmission data has been normalized.
     """
     def __init__(self, *args, **kwargs):
-        def func(frequency, resonance_frequency, internal_loss, coupling_loss):
+        def func(frequency, resonance_frequency, internal_loss, coupling_loss, phase):
             detuning = frequency / resonance_frequency - 1
-            return 1 / (1 + (internal_loss + 2j * detuning) / (2 * coupling_loss))
+            return np.exp(1j * phase) / (1 + (internal_loss + 2j * detuning) / (2 * coupling_loss))
         super(TransmissionEqualCouplingsCalibrated, self).__init__(func=func, *args, **kwargs)
 
     def guess(self, data, frequency=None):
@@ -25,7 +25,9 @@ class TransmissionEqualCouplingsCalibrated(lmfit.model.Model):
         :param frequency: the frequencies corresponding to the data -- this is not an optional parameter
         :return: a Parameters object containing reasonable initial values.
         """
-        resonance_frequency_guess = frequency[np.argmax(np.abs(data))]  # guess that the resonance is the highest point
+        max_index = np.argmax(np.abs(data))
+        resonance_frequency_guess = frequency[max_index]  # guess that the resonance is the highest point
+        phase_guess = np.angle(data[max_index])
         width = frequency.size // 10
         gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
         gaussian /= np.sum(gaussian)  # not necessary
@@ -39,7 +41,7 @@ class TransmissionEqualCouplingsCalibrated(lmfit.model.Model):
         internal_loss_guess = internal_plus_coupling * internal_over_coupling / (1 + internal_over_coupling)
         coupling_loss_guess = internal_plus_coupling / (1 + internal_over_coupling)
         params = self.make_params(resonance_frequency=resonance_frequency_guess, internal_loss=internal_loss_guess,
-                                  coupling_loss=coupling_loss_guess)
+                                  coupling_loss=coupling_loss_guess, phase=phase_guess)
         params['{}resonance_frequency'.format(self.prefix)].set(min=frequency.min(), max=frequency.max())
         params['{}internal_loss'.format(self.prefix)].set(min=1e-12, max=1)
         params['{}coupling_loss'.format(self.prefix)].set(min=1e-12, max=1)
@@ -47,16 +49,17 @@ class TransmissionEqualCouplingsCalibrated(lmfit.model.Model):
 
 
 def fit_transmission_equal_couplings_calibrated(frequency, data, errors=None):
-    model = TransmissionEqualCouplingsCalibrated()
-    initial = model.guess(data, frequency=frequency)
     if errors is None:
         weights = None
     else:
         weights = 1 / errors.real + 1j / errors.imag
+    model = TransmissionEqualCouplingsCalibrated()
+    initial = model.guess(data, frequency=frequency)
     result = model.fit(data=data, frequency=frequency, weights=weights, params=initial)
     return result
 
 
+# ToDo: this should be implemeted using a composite model with the ComplexConstant background
 class TransmissionKnownEqualCouplings(lmfit.model.Model):
     """
     This class models a resonator operated in transmission. It assumes that the coupling losses for both ports are equal
@@ -105,12 +108,12 @@ class TransmissionKnownEqualCouplings(lmfit.model.Model):
 
 
 def fit_transmission_known_equal_couplings(frequency, data, coupling_loss, errors=None):
-    model = TransmissionKnownEqualCouplings()
-    initial = model.guess(data, frequency=frequency, coupling_loss=coupling_loss)
     if errors is None:
         weights = None
     else:
         weights = 1 / errors.real + 1j / errors.imag
+    model = TransmissionKnownEqualCouplings()
+    initial = model.guess(data, frequency=frequency, coupling_loss=coupling_loss)
     result = model.fit(data=data, frequency=frequency, weights=weights, params=initial)
     return result
 
