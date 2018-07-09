@@ -3,18 +3,18 @@ import numpy as np
 measurement_defaults = {'linestyle': 'none',
                         'marker': '.',
                         'markersize': 2,
-                        'color': 'blue',
+                        'color': 'gray',
                         'alpha': 1}
 
 model_defaults = {'linestyle': '-',
                   'linewidth': 0.3,
-                  'color': 'brown',
+                  'color': 'C0',
                   'alpha': 1}
 
 resonance_defaults = {'linestyle': 'none',
                       'marker': '.',
                       'markersize': 3,
-                      'color': 'brown',
+                      'color': 'C1',
                       'alpha': 1}
 
 

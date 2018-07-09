@@ -1,3 +1,6 @@
+"""
+This module contains models for the background response of a system.
+"""
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
@@ -5,6 +8,9 @@ import lmfit
 
 
 class One(lmfit.model.Model):
+    """
+    This class represents background response that is calibrated in both magnitude and phase. It has no parameters.
+    """
 
     def __init__(self, *args, **kwargs):
         def func(frequency):
@@ -15,23 +21,56 @@ class One(lmfit.model.Model):
         return self.make_params()
 
 
-# ToDo: determine whether magnitude and phase is better than real and imaginary
-class ComplexConstant(lmfit.model.Model):
+class UnitNorm(lmfit.model.Model):
+    """
+    This class represents background response that is calibrated in magnitude but not in phase. Its single parameter is
+    the phase (in radians), which is constant in frequency.
+
+    It can be used when the system has been calibrated except for a constant phase offset.
+    """
 
     def __init__(self, *args, **kwargs):
-        def func(frequency, gain, phase):
-            return gain * np.exp(1j * phase) * np.ones(frequency.size)
+        def func(frequency, phase):
+            return np.ones(frequency.size, dtype='complex') * np.exp(1j * phase)
+        super(UnitNorm, self).__init__(func=func, *args, **kwargs)
+
+    def guess(self, data, **kwargs):
+        params = self.make_params()
+        params['phase'].value = np.mean(np.angle(data))
+        return params
+
+
+# ToDo: determine whether magnitude and phase is better than real and imaginary
+class ComplexConstant(lmfit.model.Model):
+    """
+    This class represents background response that is constant in frequency. Its two parameters are the magnitude of the
+    response and its phase (in radians).
+
+    It can be used when the cable delay has been accurately calibrated but a constant phase offset remains, and the gain
+    has not been calibrated.
+    """
+
+    def __init__(self, *args, **kwargs):
+        def func(frequency, magnitude, phase):
+            return magnitude * np.exp(1j * phase) * np.ones(frequency.size)
         super(ComplexConstant, self).__init__(func=func, *args, **kwargs)
 
     def guess(self, data, **kwargs):
         params = self.make_params()
-        params['gain'].value = np.mean(np.abs(data))
-        params['gain'].min = 0
+        params['magnitude'].value = np.mean(np.abs(data))
+        params['magnitude'].min = 0
         params['phase'].value = np.mean(np.angle(data))
         return params
 
 
 class ConstantGainConstantDelay(lmfit.model.Model):
+    """
+    This class represents background response that has constant magnitude and a fixed time delay and phase offset.
+
+    This is a reasonable model to use for VNA data for which no calibration has been done. In order to fit the phase
+    wrapping, the frequency range should be substantially larger than the resonator linewidth and the frequency spacing
+    should be substantially less than the period of the phase wrapping.
+    """
 
     def __init__(self, *args, **kwargs):
         def func(frequency, frequency_reference, delay, phase, gain):
@@ -51,6 +90,17 @@ class ConstantGainConstantDelay(lmfit.model.Model):
 
 
 class LinearGainConstantDelay(lmfit.model.Model):
+    """
+    This class represents background response for which the magnitude varies linearly with frequency and there is a
+    fixed time delay and phase offset. The parameters are the reference frequency, the time delay, the phase at the
+    reference frequency, the slope of the magnitude with frequency, and the magnitude at the reference frequency. The
+    reference frequency is a fixed parameter that is set equal to the minimum frequency; using zero as the reference
+    frequency would be simpler but this fails in practice because the frequency range is too small.
+
+    This is a reasonable model to use for VNA data for which no calibration has been done. In order to fit the phase
+    wrapping and magnitude variation, the frequency range should be substantially larger than the resonator linewidth
+    and the frequency spacing should be substantially less than the period of the phase wrapping.
+    """
 
     def __init__(self, *args, **kwargs):
         def func(frequency, frequency_reference, delay, phase, gain_slope, gain_reference):
@@ -69,11 +119,16 @@ class LinearGainConstantDelay(lmfit.model.Model):
         return params
 
 
-# ToDo: use this to help fitting of transmission resonators
-# ToDo: upgrade to a more sophisticated interpolation function if necessary
+class KnownMagnitudeConstantDelay(lmfit.model.Model):
+    """
+    This model represents background response that has been calibrated in magnitude but has an uncalibrated time delay.
+    """
+    pass
+
+
 class KnownBackground(lmfit.model.Model):
     """
-    This model has no free parameters and should be used when the background transmission has been measured.
+    This model represents background response that has been measured, so it has no free parameters.
     """
 
     def __init__(self, measurement_frequency, measurement_data, *args, **kwargs):

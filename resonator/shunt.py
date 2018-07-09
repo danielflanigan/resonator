@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import lmfit
 
-from . import fitter
+from . import background, fitter
 
 
 class Shunt(lmfit.model.Model):
@@ -48,9 +48,11 @@ class Shunt(lmfit.model.Model):
 
 class ShuntFitter(fitter.ResonatorFitter):
 
-    def __init__(self, frequency, data, errors=None, **kwargs):
-        super(ShuntFitter, self).__init__(model=Shunt, frequency=frequency, data=data,
-                                          errors=errors, **kwargs)
+    def __init__(self, frequency, data, background_model=None, errors=None, **kwargs):
+        if background_model is None:
+            background_model = background.ComplexConstant()
+        super(ShuntFitter, self).__init__(frequency=frequency, data=data, foreground_model=Shunt(),
+                                          background_model=background_model, errors=errors, **kwargs)
 
     def invert(self, time_ordered_data):
         z = self.coupling_loss * ((1 + 1j * self.asymmetry) / (1 - time_ordered_data) - 1)
@@ -58,19 +60,3 @@ class ShuntFitter(fitter.ResonatorFitter):
         internal_loss = z.real
         return detuning, internal_loss
 
-    # ToDo: decide whether to keep these aliases
-    @property
-    def f_r(self):
-        return self.resonance_frequency
-
-    @property
-    def Q_r(self):
-        return 1 / (self.internal_loss + self.coupling_loss)
-
-    @property
-    def Q_i(self):
-        return 1 / self.internal_loss
-
-    @property
-    def Q_c(self):
-        return 1 / self.coupling_loss
