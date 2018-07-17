@@ -55,11 +55,13 @@ class ComplexConstant(lmfit.model.Model):
             return magnitude * np.exp(1j * phase) * np.ones(frequency.size)
         super(ComplexConstant, self).__init__(func=func, *args, **kwargs)
 
+    # ToDo: find a function less sensitive to outliers than the mean
     def guess(self, data, **kwargs):
         params = self.make_params()
-        params['magnitude'].value = np.mean(np.abs(data))
+        mean = np.mean(data.real) + 1j * np.mean(data.imag)
+        params['magnitude'].value = np.abs(mean)
         params['magnitude'].min = 0
-        params['phase'].value = np.mean(np.angle(data))
+        params['phase'].value = np.angle(mean)
         return params
 
 
