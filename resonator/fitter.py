@@ -87,10 +87,14 @@ class ResonatorFitter(object):
                 raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, attr))
 
     def __dir__(self):
-        return sorted(set(dir(object) +
+        return sorted(set(dir(ResonatorFitter) +
                           list(self.__dict__.keys()) +
                           list(self.result.params.keys()) +
                           [name + '_error' for name in self.result.params.keys()]))
+
+    def __str__(self):
+        return "ResonatorFitter: {} * {}".format(self.background_model.__class__.__name__,
+                                                 self.foreground_model.__class__.__name__)
 
     @property
     def background_model(self):
@@ -102,7 +106,7 @@ class ResonatorFitter(object):
 
     @property
     def foreground_data(self):
-        return self.model.right.eval(self.result.params, frequency=self.frequency)
+        return self.foreground_model.eval(self.result.params, frequency=self.frequency)
 
     @property
     def background_data(self):
@@ -118,7 +122,7 @@ class ResonatorFitter(object):
     def remove_background(self, frequency, data):
         """
         Normalize data to the appropriate plane by dividing it by the background evaluated at the given frequencies
-        using the current best fit params. If the model is not composite, the data is returned.
+        using the current best fit params.
 
         frequency : float or array of floats
             Frequency (in same units as the model was instantiated) at which to remove the background.
@@ -191,6 +195,7 @@ class ResonatorFitter(object):
 
     # Aliases for common resonator properties
 
+    # ToDo: add errors here
     @property
     def f_r(self):
         return self.resonance_frequency
@@ -198,6 +203,18 @@ class ResonatorFitter(object):
     @property
     def omega_r(self):
         return 2 * np.pi * self.resonance_frequency
+
+    @property
+    def loss_r(self):
+        return self.internal_loss + self.coupling_loss
+
+    @property
+    def loss_i(self):
+        return self.internal_loss
+
+    @property
+    def loss_c(self):
+        return self.coupling_loss
 
     @property
     def Q_r(self):
