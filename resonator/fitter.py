@@ -1,5 +1,5 @@
 """
-This module contains the ResonatorFitter class.
+This module contains the ResonatorFitter class and the MeasurementModelResonance object.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -25,7 +25,9 @@ MeasurementModelResonance = namedtuple('MeasurementModelResonance',
 
 class ResonatorFitter(object):
     """
-    This class is a wrapper for models that adds attribute access to the lmfit.ui.Fitter interactive fitting class.
+    This class is a wrapper for composite models that represent the response of a resonator multiplied by the background
+    response of the system. Its subclasses represent models for resonators used in specific configurations, such as in
+    transmission, in reflection, or in the shunt ("hanger") configuration.
     """
 
     def __init__(self, frequency, data, foreground_model, background_model=None, errors=None, **kwargs):
@@ -49,7 +51,7 @@ class ResonatorFitter(object):
             least-squares fit; the default of None means to use equal errors and thus equal weights for each point;
             to exclude a point, set the errors to (1 + 1j) * np.inf for that point.
         kwargs:
-            Keyword arguments passed directly to model.fit.
+            Keyword arguments passed directly to lmfit.model.Model.fit(); see the lmfit documentation.
         """
         if not np.iscomplexobj(data):
             raise TypeError("Resonator data must be complex.")
@@ -61,9 +63,6 @@ class ResonatorFitter(object):
             weights = None
         else:
             weights = 1 / errors.real + 1j / errors.imag
-        # kwargs get passed from Fitter to Model.fit directly. Signature is:
-        #    def fit(self, data, params=None, weights=None, method='leastsq',
-        #            iter_cb=None, scale_covar=True, verbose=False, fit_kws=None, **kwargs):
         self.frequency = frequency
         self.data = data
         self.errors = errors
@@ -191,6 +190,7 @@ class ResonatorFitter(object):
 
     # Aliases for common resonator properties
 
+    # ToDo: add errors
     @property
     def f_r(self):
         return self.resonance_frequency

@@ -58,10 +58,10 @@ class ComplexConstant(lmfit.model.Model):
     # ToDo: find a function less sensitive to outliers than the mean
     def guess(self, data, **kwargs):
         params = self.make_params()
-        mean = np.mean(data.real) + 1j * np.mean(data.imag)
-        params['magnitude'].value = np.abs(mean)
+        median = np.median(data.real) + 1j * np.median(data.imag)
+        params['magnitude'].value = np.abs(median)
         params['magnitude'].min = 0
-        params['phase'].value = np.angle(mean)
+        params['phase'].value = np.angle(median)
         return params
 
 
