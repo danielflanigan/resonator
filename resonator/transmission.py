@@ -1,10 +1,12 @@
 """
-This module contains models for resonators that are operated in transmission
+This module contains models and fitters for resonators that are operated in transmission.
 """
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import lmfit
+
+from . import background, fitter
 
 
 class TransmissionEqualCouplings(lmfit.model.Model):
@@ -37,7 +39,7 @@ class TransmissionEqualCouplings(lmfit.model.Model):
         width = frequency.size // 10
         gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
         gaussian /= np.sum(gaussian)  # not necessary
-        smoothed = np.convolve(gaussian, abs(data), mode='same')
+        smoothed = np.convolve(gaussian, np.abs(data), mode='same')
         derivative = np.convolve(np.array([1, -1]), smoothed, mode='same')
         # Exclude the edges, which are affected by zero padding.
         linewidth = (frequency[np.argmin(derivative[width:-width])] -
@@ -48,9 +50,9 @@ class TransmissionEqualCouplings(lmfit.model.Model):
         coupling_loss_guess = internal_plus_coupling / (1 + internal_over_coupling)
         params = self.make_params(resonance_frequency=resonance_frequency_guess, internal_loss=internal_loss_guess,
                                   coupling_loss=coupling_loss_guess, phase=phase_guess)
-        params['{}resonance_frequency'.format(self.prefix)].set(min=frequency.min(), max=frequency.max())
-        params['{}internal_loss'.format(self.prefix)].set(min=1e-12, max=1)
-        params['{}coupling_loss'.format(self.prefix)].set(min=1e-12, max=1)
+        params['resonance_frequency'].set(min=frequency.min(), max=frequency.max())
+        params['internal_loss'].set(min=1e-12, max=1)
+        params['coupling_loss'].set(min=1e-12, max=1)
         return params
 
 
@@ -85,7 +87,7 @@ class TransmissionEqualCouplingsCalibrated(lmfit.model.Model):
         width = frequency.size // 10
         gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
         gaussian /= np.sum(gaussian)  # not necessary
-        smoothed = np.convolve(gaussian, abs(data), mode='same')
+        smoothed = np.convolve(gaussian, np.abs(data), mode='same')
         derivative = np.convolve(np.array([1, -1]), smoothed, mode='same')
         # Exclude the edges, which are affected by zero padding.
         linewidth = (frequency[np.argmin(derivative[width:-width])] -
@@ -94,13 +96,11 @@ class TransmissionEqualCouplingsCalibrated(lmfit.model.Model):
         internal_over_coupling = 1 / np.max(np.abs(data)) - 1
         internal_loss_guess = internal_plus_coupling * internal_over_coupling / (1 + internal_over_coupling)
         coupling_loss_guess = internal_plus_coupling / (1 + internal_over_coupling)
-        params = lmfit.Parameters()
-        params.add()
         params = self.make_params(resonance_frequency=resonance_frequency_guess, internal_loss=internal_loss_guess,
                                   coupling_loss=coupling_loss_guess, phase=phase_guess)
-        params['{}resonance_frequency'.format(self.prefix)].set(min=frequency.min(), max=frequency.max())
-        params['{}internal_loss'.format(self.prefix)].set(min=1e-12, max=1)
-        params['{}coupling_loss'.format(self.prefix)].set(min=1e-12, max=1)
+        params['resonance_frequency'].set(min=frequency.min(), max=frequency.max())
+        params['internal_loss'].set(min=1e-12, max=1)
+        params['coupling_loss'].set(min=1e-12, max=1)
         return params
 
 
