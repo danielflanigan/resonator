@@ -67,10 +67,8 @@ class ResonatorFitter(object):
         self.data = data
         self.errors = errors
         self.model = background_model * foreground_model
-        guess = self.background_model.guess(data=data, frequency=frequency)
-        background_guess = self.background_model.eval(params=guess, frequency=frequency)
-        guess.update(self.foreground_model.guess(data=data / background_guess, frequency=frequency))
-        self.result = self.model.fit(frequency=frequency, data=data, weights=weights, params=guess)
+        self.result = self.model.fit(frequency=frequency, data=data, weights=weights,
+                                     params=self.guess(frequency=frequency, data=data))
 
     def __getattr__(self, attr):
         if attr.endswith('_error'):
@@ -110,6 +108,20 @@ class ResonatorFitter(object):
     @property
     def background_data(self):
         return self.background_model.eval(params=self.result.params, frequency=self.frequency)
+
+    def guess(self, frequency, data):
+        """
+        Use the frequency and data arrays to make a reasonable guess at the best-fit values, in order to provide a good
+        initial condition for the fit.
+
+        :param frequency: an array of floats that are the frequencies corresponding to the data.
+        :param data: an array of complex data values.
+        :return: a lmfit.Parameters object.
+        """
+        guess = self.background_model.guess(data=data, frequency=frequency)
+        background_guess = self.background_model.eval(params=guess, frequency=frequency)
+        guess.update(self.foreground_model.guess(data=data / background_guess, frequency=frequency))
+        return guess
 
     def evaluate_model(self, frequency=None, params=None):
         if params is None:

@@ -40,7 +40,6 @@ class UnitNorm(lmfit.model.Model):
         return params
 
 
-# ToDo: determine whether magnitude and phase is better than real and imaginary
 class ComplexConstant(lmfit.model.Model):
     """
     This class represents background response that is constant in frequency. Its two parameters are the magnitude of the
@@ -55,12 +54,25 @@ class ComplexConstant(lmfit.model.Model):
             return magnitude * np.exp(1j * phase) * np.ones(frequency.size)
         super(ComplexConstant, self).__init__(func=func, *args, **kwargs)
 
-    # ToDo: find a function less sensitive to outliers than the mean
-    def guess(self, data, **kwargs):
+    def guess(self, data, fraction=0.1):
+        """
+        This function should calculate very good inital values for configurations in which the transmission far from
+        resonance is nonzero, such as the shunt and reflection configurations. It will underestimate the magnitude for
+        the transmission configuration, especially when the internal loss is high. For transmission resonators, the
+        magnitude guess may be improved by using a smaller median fraction so that it uses fewer points closer to the
+        resonance.
+
+        :param data: an array of complex data points.
+        :param fraction: the fraction of points to use when estimating the background magnitude; it should be large
+          enough that any spurious high-magnitude points do not bias the median; for transmission resonators it should
+          be small enough that points far from the peak are not included.
+        :return: lmfit.Parameters
+        """
         params = self.make_params()
-        median = np.median(data.real) + 1j * np.median(data.imag)
-        params['magnitude'].value = np.abs(median)
-        params['magnitude'].min = 0
+        # Use a fraction of the points with the largest magnitude to estimate the background magnitude.
+        median_indices = np.argsort(np.abs(data))[-int(fraction * data.size):]
+        median = np.median(data[median_indices].real) + 1j * np.median(data[median_indices].imag)
+        params['magnitude'].set(value=np.abs(median), min=0)
         params['phase'].value = np.angle(median)
         return params
 
