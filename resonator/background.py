@@ -12,12 +12,12 @@ class One(lmfit.model.Model):
     This class represents background response that is calibrated in both magnitude and phase. It has no parameters.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwds):
         def func(frequency):
             return np.ones(frequency.size, dtype='complex')
-        super(One, self).__init__(func=func, *args, **kwargs)
+        super(One, self).__init__(func=func, *args, **kwds)
 
-    def guess(self, data, **kwargs):
+    def guess(self, data, **kwds):
         return self.make_params()
 
 
@@ -29,14 +29,17 @@ class UnitNorm(lmfit.model.Model):
     It can be used when the system has been calibrated except for a constant phase offset.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwds):
         def func(frequency, phase):
             return np.ones(frequency.size, dtype='complex') * np.exp(1j * phase)
-        super(UnitNorm, self).__init__(func=func, *args, **kwargs)
+        super(UnitNorm, self).__init__(func=func, *args, **kwds)
 
-    def guess(self, data, **kwargs):
+    def guess(self, data, fraction=0.1, reference_point=1 + 0j, **kwds):
         params = self.make_params()
-        params['phase'].value = np.mean(np.angle(data))
+        # Use a fraction of the points with the largest magnitude to estimate the background phase.
+        median_indices = np.argsort(np.abs(data))[-int(fraction * data.size):]
+        median = np.median(data[median_indices].real) + 1j * np.median(data[median_indices].imag)
+        params['phase'].value = np.angle(median) - np.angle(reference_point)
         return params
 
 
@@ -49,12 +52,12 @@ class ComplexConstant(lmfit.model.Model):
     has not been calibrated.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwds):
         def func(frequency, magnitude, phase):
             return magnitude * np.exp(1j * phase) * np.ones(frequency.size)
-        super(ComplexConstant, self).__init__(func=func, *args, **kwargs)
+        super(ComplexConstant, self).__init__(func=func, *args, **kwds)
 
-    def guess(self, data, fraction=0.1):
+    def guess(self, data, fraction=0.1, reference_point=1 + 0j, **kwds):
         """
         This function should calculate very good inital values for configurations in which the transmission far from
         resonance is nonzero, such as the shunt and reflection configurations. It will underestimate the magnitude for
@@ -66,6 +69,8 @@ class ComplexConstant(lmfit.model.Model):
         :param fraction: the fraction of points to use when estimating the background magnitude; it should be large
           enough that any spurious high-magnitude points do not bias the median; for transmission resonators it should
           be small enough that points far from the peak are not included.
+        :param reference_point: a complex point that the data should approach far from any resonance.
+        :param kwds: currently ignored.
         :return: lmfit.Parameters
         """
         params = self.make_params()
@@ -73,7 +78,7 @@ class ComplexConstant(lmfit.model.Model):
         median_indices = np.argsort(np.abs(data))[-int(fraction * data.size):]
         median = np.median(data[median_indices].real) + 1j * np.median(data[median_indices].imag)
         params['magnitude'].set(value=np.abs(median), min=0)
-        params['phase'].value = np.angle(median)
+        params['phase'].value = np.angle(median) - np.angle(reference_point)
         return params
 
 
@@ -86,12 +91,12 @@ class ConstantGainConstantDelay(lmfit.model.Model):
     should be substantially less than the period of the phase wrapping.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwds):
         def func(frequency, frequency_reference, delay, phase, gain):
             return gain * np.exp(1j * (2 * np.pi * (frequency - frequency_reference) * delay + phase))
-        super(ConstantGainConstantDelay, self).__init__(func=func, *args, **kwargs)
+        super(ConstantGainConstantDelay, self).__init__(func=func, *args, **kwds)
 
-    def guess(self, data, frequency=None, **kwargs):
+    def guess(self, data, frequency=None, **kwds):
         frequency_reference = frequency.min()
         phase_slope, phase_reference = np.polyfit(frequency - frequency_reference, np.unwrap(np.angle(data)), 1)
         gain = np.abs(np.mean(data * np.exp(-1j * (phase_slope * (frequency - frequency_reference) + phase_reference))))
@@ -99,7 +104,7 @@ class ConstantGainConstantDelay(lmfit.model.Model):
                                   phase=phase_reference, gain=gain)
         params['frequency_reference'].vary = False
         params['phase'].set(min=phase_reference - np.pi, max=phase_reference + np.pi)  # ToDo: copied; necessary?
-        params.update(**kwargs)
+        params.update(**kwds)
         return params
 
 
@@ -116,13 +121,13 @@ class LinearGainConstantDelay(lmfit.model.Model):
     and the frequency spacing should be substantially less than the period of the phase wrapping.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwds):
         def func(frequency, frequency_reference, delay, phase, gain_slope, gain_reference):
             gain = gain_reference + gain_slope * (frequency - frequency_reference)
             return gain * np.exp(1j * (2 * np.pi * (frequency - frequency_reference) * delay + phase))
-        super(LinearGainConstantDelay, self).__init__(func=func, *args, **kwargs)
+        super(LinearGainConstantDelay, self).__init__(func=func, *args, **kwds)
 
-    def guess(self, data, frequency=None, **kwargs):
+    def guess(self, data, frequency=None, **kwds):
         frequency_reference = frequency.min()
         phase_slope, phase_reference = np.polyfit(frequency - frequency_reference, np.unwrap(np.angle(data)), 1)
         gain_slope, gain_reference = np.polyfit(frequency - frequency_reference, np.abs(data), 1)
@@ -145,13 +150,13 @@ class KnownBackground(lmfit.model.Model):
     This model represents background response that has been measured, so it has no free parameters.
     """
 
-    def __init__(self, measurement_frequency, measurement_data, *args, **kwargs):
+    def __init__(self, measurement_frequency, measurement_data, *args, **kwds):
         def func(frequency):
             data_real = np.interp(frequency, measurement_frequency, measurement_data.real)
             data_imag = np.interp(frequency, measurement_frequency, measurement_data.imag)
             return data_real + 1j * data_imag
-        super(KnownBackground, self).__init__(func=func, *args, **kwargs)
+        super(KnownBackground, self).__init__(func=func, *args, **kwds)
 
-    def guess(self, data, **kwargs):
+    def guess(self, data, **kwds):
         return self.make_params()
 

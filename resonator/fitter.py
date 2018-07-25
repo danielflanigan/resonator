@@ -118,7 +118,8 @@ class ResonatorFitter(object):
         :param data: an array of complex data values.
         :return: a lmfit.Parameters object.
         """
-        guess = self.background_model.guess(data=data, frequency=frequency)
+        guess = self.background_model.guess(data=data, frequency=frequency,
+                                            reference_point=self.foreground_model.reference_point)
         background_guess = self.background_model.eval(params=guess, frequency=frequency)
         guess.update(self.foreground_model.guess(data=data / background_guess, frequency=frequency))
         return guess

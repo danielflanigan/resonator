@@ -19,6 +19,8 @@ class TransmissionEqualCouplings(lmfit.model.Model):
     total / loaded / resonator quality factor is
       Q = 1 / (internal_loss + coupling_loss).
     """
+    reference_point = 1 + 0j
+
     def __init__(self, *args, **kwargs):
         def func(frequency, resonance_frequency, internal_loss, coupling_loss):
             detuning = frequency / resonance_frequency - 1
