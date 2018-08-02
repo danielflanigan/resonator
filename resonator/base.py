@@ -23,35 +23,32 @@ MeasurementModelResonance = namedtuple('MeasurementModelResonance',
                                                     'resonance_frequency', 'resonance_data'])
 
 
+
 class ResonatorFitter(object):
     """
     This class is a wrapper for composite models that represent the response of a resonator multiplied by the background
-    response of the system. Its subclasses represent models for resonators used in specific configurations, such as in
-    transmission, in reflection, or in the shunt ("hanger") configuration.
+    response of the system. Its subclasses represent models for resonators used in specific configurations.
     """
 
-    def __init__(self, frequency, data, foreground_model, background_model=None, errors=None, **kwargs):
+    def __init__(self, frequency, data, foreground_model, background_model=None, errors=None, **fit_kwds):
         """
         Fit the given data using the given resonator model.
 
         Parameters
         ----------
-        frequency: array of float
-            Frequencies at which data was measured
-        data: array of complex
-            Measured data, probably forward transmission S_{21} or forward reflection S_{11}.
-        foreground_model: lmfit.model.Model
-            The model for the resonator(s) to be fit.
-        background_model: lmfit.model.Model
-            The model for the background, meaning everything other than the target resonator(s), including effects such
-            as gain, cable delay, and other resonances; the default of background.One assumes that the data have been
-            normalized perfectly in both amplitude and phase, and has no free parameters.
-        errors: None or array of complex
-            Standard error of the mean for the real and imaginary parts of the data, used to assign weights in the
-            least-squares fit; the default of None means to use equal errors and thus equal weights for each point;
-            to exclude a point, set the errors to (1 + 1j) * np.inf for that point.
-        kwargs:
-            Keyword arguments passed directly to lmfit.model.Model.fit(); see the lmfit documentation.
+        :param frequency: an array of floats containing the frequencies at which the data was measured.
+        :param data: an array of complex numbers containing the data, probably forward transmission S_{21} or forward
+          reflection S_{11}.
+        :param foreground_model: an instance (not the class) of a lmfit.model.Model subclass representing the resonator
+          to be fit.
+        :param background_model: an instance (not the class) of a lmfit.model.Model subclass representing the
+          background, meaning everything other than the target resonator(s), including effects such
+          as gain, cable delay, and other resonances; the default of background.One assumes that the data have been
+          perfectly calibrated to the resonator plane, which is unlikely to be the case in practice.
+        :param errors: Standard error of the mean for the real and imaginary parts of the data, used to assign weights
+          in the least-squares fit; the default of None means to use equal errors and thus equal weights for each point;
+          to exclude a point, set the errors to (1 + 1j) * np.inf for that point.
+        :param fit_kwds: keyword arguments passed directly to lmfit.model.Model.fit(); see the lmfit documentation.
         """
         if not np.iscomplexobj(data):
             raise TypeError("Resonator data must be complex.")
@@ -66,9 +63,9 @@ class ResonatorFitter(object):
         self.frequency = frequency
         self.data = data
         self.errors = errors
+        self.weights = weights
         self.model = background_model * foreground_model
-        self.result = self.model.fit(frequency=frequency, data=data, weights=weights,
-                                     params=self.guess(frequency=frequency, data=data))
+        self.result = self.fit()
 
     def __getattr__(self, attr):
         if attr.endswith('_error'):
@@ -123,6 +120,26 @@ class ResonatorFitter(object):
         background_guess = self.background_model.eval(params=guess, frequency=frequency)
         guess.update(self.foreground_model.guess(data=data / background_guess, frequency=frequency))
         return guess
+
+    def fit(self, guess=None, **fit_kwds):
+        """
+        Fit the object's model to its data without overwriting the existing result. This function is called when the
+        object is created. Note that this function does not modify the object's state, and the result must be stored to
+        used by other methods, as in the examples below.
+
+        Example: improve the initial parameters
+        improved_guess = r.guess(frequency=self.frequency, data=self.data)  # Start with the default guess
+        # improve on the guess somehow
+        r.result = r.fit(guess=improved_guess)
+
+        :param guess: a lmfit.Parameters object containing reasonable initial values; the default is created by calling
+          self.guess(), which uses the guessing functions of the background then the foreground.
+        :param fit_kwds: a dict of keywords passed directly to lmfit.model.Model.fit().
+        :return: None
+        """
+        if guess is None:
+            guess = self.guess(frequency=self.frequency, data=self.data)
+        return self.model.fit(frequency=self.frequency, data=self.data, weights=self.weights, params=guess, **fit_kwds)
 
     def evaluate_model(self, frequency=None, params=None):
         if params is None:
@@ -206,48 +223,85 @@ class ResonatorFitter(object):
         return self.invert(self.remove_background(frequency=measurement_frequency, data=time_ordered_data))
 
     # Aliases for common resonator properties
+    # ToDo: add power flow calculations
+    # ToDo: calculate photon number from power flows
 
-    # ToDo: add errors
     @property
     def f_r(self):
         return self.resonance_frequency
+
+    @property
+    def f_r_error(self):
+        return self.resonance_frequency_error
 
     @property
     def omega_r(self):
         return 2 * np.pi * self.resonance_frequency
 
     @property
-    def loss_r(self):
+    def omega_r_error(self):
+        return 2 * np.pi * self.resonance_frequency_error
+
+    @property
+    def total_loss(self):
+        """The total loss is the inverse of the total / loaded / resonator quality factor."""
         return self.internal_loss + self.coupling_loss
 
     @property
-    def loss_i(self):
-        return self.internal_loss
-
-    @property
-    def loss_c(self):
-        return self.coupling_loss
-
-    @property
-    def Q_r(self):
-        return 1 / (self.internal_loss + self.coupling_loss)
+    def total_loss_error(self):
+        """Assume that the errors of the internal loss and coupling loss are independent."""
+        return (self.internal_loss_error ** 2 + self.coupling_loss_error ** 2) ** (1 / 2)
 
     @property
     def Q_i(self):
         return 1 / self.internal_loss
 
     @property
+    def Q_i_error(self):
+        return self.internal_loss_error / self.internal_loss ** 2
+
+    @property
     def Q_c(self):
         return 1 / self.coupling_loss
 
     @property
-    def kappa_r(self):
-        return self.omega_r * (self.internal_loss + self.coupling_loss)
+    def Q_c_error(self):
+        return self.coupling_loss_error / self.coupling_loss ** 2
+
+    @property
+    def Q_r(self):
+        return 1 / (self.internal_loss + self.coupling_loss)
+
+    @property
+    def Q_r_error(self):
+        return self.total_loss_error / self.total_loss ** 2
 
     @property
     def kappa_i(self):
         return self.omega_r * self.internal_loss
 
     @property
+    def kappa_i_error(self):
+        """Assume that the errors of the resonance frequency and internal loss are independent."""
+        return self.kappa_i * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
+                               (self.internal_loss_error / self.internal_loss) ** 2) ** (1 / 2)
+
+    @property
     def kappa_c(self):
         return self.omega_r * self.coupling_loss
+
+    @property
+    def kappa_c_error(self):
+        """Assume that the errors of the resonance frequency and coupling loss are independent."""
+        return self.kappa_c * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
+                               (self.coupling_loss_error / self.coupling_loss) ** 2) ** (1 / 2)
+
+    @property
+    def kappa_r(self):
+        return self.omega_r * (self.internal_loss + self.coupling_loss)
+
+    @property
+    def kappa_r_error(self):
+        """Assume that the errors of the resonance frequency, internal loss, and coupling loss are independent."""
+        return self.kappa_r * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
+                               (self.total_loss_error / self.total_loss) ** 2) ** (1 / 2)

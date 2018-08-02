@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import lmfit
 
-from . import background, fitter
+from . import background, base
 
 
 class Shunt(lmfit.model.Model):
@@ -47,7 +47,7 @@ class Shunt(lmfit.model.Model):
         return params
 
 
-class ShuntFitter(fitter.ResonatorFitter):
+class ShuntFitter(base.ResonatorFitter):
 
     def __init__(self, frequency, data, background_model=None, errors=None, **kwds):
         """

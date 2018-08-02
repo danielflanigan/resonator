@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import lmfit
 
-from . import background, fitter
+from . import background, base
 
 
 class Reflection(lmfit.model.Model):
@@ -47,7 +47,7 @@ class Reflection(lmfit.model.Model):
         return params
 
 
-class ReflectionFitter(fitter.ResonatorFitter):
+class ReflectionFitter(base.ResonatorFitter):
 
     def __init__(self, frequency, data, background_model=None, errors=None, **kwds):
         if background_model is None:

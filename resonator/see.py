@@ -1,6 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
+from matplotlib import pyplot as plt
+try:
+    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']  # matplotlib >= 1.5
+except KeyError:
+    color_cycle = plt.rcParams['axes.color_cycle']  # matplotlib < 1.5
 
 
 DEFAULT_NUM_MODEL_POINTS = 10000
@@ -13,13 +18,13 @@ measurement_defaults = {'linestyle': 'none',
 
 model_defaults = {'linestyle': '-',
                   'linewidth': 0.3,
-                  'color': 'C0',
+                  'color': color_cycle[0],
                   'alpha': 1}
 
 resonance_defaults = {'linestyle': 'none',
                       'marker': '.',
                       'markersize': 3,
-                      'color': 'C1',
+                      'color': color_cycle[1],
                       'alpha': 1}
 
 
@@ -34,10 +39,10 @@ def magnitude_vs_frequency(resonator, axes, normalize=False, num_model_points=DE
     :param axes: a matplotlib Axes instance.
     :param normalize: if True, normalize the plotted values by dividing them by the best-fit background model values.
     :param num_model_points: the number of points at which to evaluate the model over the frequency range.
-    :param frequency_scale: a float by which the plotted and returned frequencies are multiplied.
-    :param three_ticks: if True, the horizontal axis will have three tick marks at the minimum frequency, resonance
-      frequency, and maximum frequency.
-    :param decibels: if True, the magnitude will be plotted and returned in dB.
+    :param frequency_scale: a float by which the plotted frequencies are multiplied.
+    :param three_ticks: if True, the horizontal axis will have exactly three tick marks at the minimum frequency,
+      resonance frequency, and maximum frequency.
+    :param decibels: if True, the magnitude will be plotted in dB.
     :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
       measurement_defaults above.
     :param model_settings: a dict of pyplot.plot keywords used to plot the model values; see model_defaults above.
@@ -80,10 +85,10 @@ def phase_vs_frequency(resonator, axes, normalize=False, num_model_points=DEFAUL
     :param axes: a matplotlib Axes instance.
     :param normalize: if True, normalize the plotted values by dividing them by the best-fit background model values.
     :param num_model_points: the number of points at which to evaluate the model over the frequency range.
-    :param frequency_scale: a float by which the plotted and returned frequencies are multiplied.
-    :param three_ticks: if True, the horizontal axis will have three tick marks at the minimum frequency, resonance
-      frequency, and maximum frequency.
-    :param degrees: if True, the phase will be plotted and returned in degrees instead of radians.
+    :param frequency_scale: a float by which the plotted frequencies are multiplied.
+    :param three_ticks: if True, the horizontal axis will have exactly three tick marks at the minimum frequency,
+      resonance frequency, and maximum frequency.
+    :param degrees: if True, the phase will be plotted in degrees instead of radians.
     :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
       measurement_defaults above.
     :param model_settings: a dict of pyplot.plot keywords used to plot the model values; see model_defaults above.
@@ -115,7 +120,7 @@ def phase_vs_frequency(resonator, axes, normalize=False, num_model_points=DEFAUL
     return mmr
 
 
-def real_and_imaginary(resonator, axes, normalize=False, num_model_points=DEFAULT_NUM_MODEL_POINTS,
+def real_and_imaginary(resonator, axes, normalize=False, num_model_points=DEFAULT_NUM_MODEL_POINTS, equal_aspect=True,
                        measurement_settings=None, model_settings=None, resonance_settings=None):
     """
     Plot imaginary parts versus real parts on the given axis for the data, best-fit model, and model at the best-fit
@@ -125,6 +130,7 @@ def real_and_imaginary(resonator, axes, normalize=False, num_model_points=DEFAUL
     :param axes: a matplotlib Axes instance.
     :param normalize: if True, normalize the plotted values by dividing them by the best-fit background model values.
     :param num_model_points: the number of points at which to evaluate the model over the frequency range.
+    :param equal_aspect: if True, set the axes aspect ratio to 'equal' so that the normalized resonance forms a circle.
     :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
       measurement_defaults above.
     :param model_settings: a dict of pyplot.plot keywords used to plot the model values; see model_defaults above.
@@ -146,4 +152,6 @@ def real_and_imaginary(resonator, axes, normalize=False, num_model_points=DEFAUL
     axes.plot(mmr.measurement_data.real, mmr.measurement_data.imag, **measurement_kwds)
     axes.plot(mmr.model_data.real, mmr.model_data.imag, **model_kwds)
     axes.plot(mmr.resonance_data.real, mmr.resonance_data.imag, **resonance_kwds)
+    if equal_aspect:
+        axes.set_aspect('equal')
     return mmr

@@ -1,15 +1,20 @@
 """
 This module contains models and fitters for resonators that are operated in transmission.
+
+Fitting resonators in this configuration is more complicated than in the other configurations because the off-resonance
+data goes to 0 instead of 1, while the on-resonance data goes to a value that depends on the quality factors. Thus, one
+additional value must be provided in order to fit. For the moment, the existing fitters use hardcoded background models
+insteading of accepting one as a parameter.
 """
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import lmfit
 
-from . import background, fitter
+from . import background, base
 
 
-class TransmissionEqualCouplings(lmfit.model.Model):
+class SymmetricTransmission(lmfit.model.Model):
     """
     This class models a resonator operated in transmission. It assumes that two ports have equal coupling losses (or,
     equivalently, equal coupling quality factors).
@@ -19,13 +24,13 @@ class TransmissionEqualCouplings(lmfit.model.Model):
     total / loaded / resonator quality factor is
       Q = 1 / (internal_loss + coupling_loss).
     """
-    reference_point = 1 + 0j
+    reference_point = 0.5 + 0j
 
     def __init__(self, *args, **kwargs):
         def func(frequency, resonance_frequency, internal_loss, coupling_loss):
             detuning = frequency / resonance_frequency - 1
             return 1 / (1 + (internal_loss + 2j * detuning) / coupling_loss)
-        super(TransmissionEqualCouplings, self).__init__(func=func, *args, **kwargs)
+        super(SymmetricTransmission, self).__init__(func=func, *args, **kwargs)
 
     def guess(self, data, frequency=None, coupling_loss=None):
         """
@@ -63,16 +68,16 @@ class TransmissionEqualCouplings(lmfit.model.Model):
         return params
 
 
-class CCtimesTECFitterKnownMagnitude(fitter.ResonatorFitter):
+class CCxSTFitterKnownMagnitude(base.ResonatorFitter):
     """
     This class fits a composite model that is the product of the ComplexConstant background model and the
-    TransmissionEqualCouplings model.
+    SymmetricTransmission model.
 
     It should be used when the magnitude of the background response is known and the cable delay has been calibrated so
     that the background phase is constant across the band, but it will fit for a constant phase offset.
     """
 
-    def __init__(self, frequency, data, background_magnitude, errors=None, **kwargs):
+    def __init__(self, frequency, data, background_magnitude, errors=None, **fit_kwds):
         """
         Fit the given data.
 
@@ -83,37 +88,37 @@ class CCtimesTECFitterKnownMagnitude(fitter.ResonatorFitter):
         :param errors: an array of complex numbers that are the standard errors of the mean of the data points; the
           errors for the real and imaginary parts may be different; if no errors are provided then all points will be
           weighted equally.
-        :param kwargs: keyword arguments passed directly to lmfit.model.Model.fit().
+        :param fit_kwds: keyword arguments passed directly to lmfit.model.Model.fit().
         """
         self.background_magnitude = background_magnitude
-        super(CCtimesTECFitterKnownMagnitude, self).__init__(frequency=frequency, data=data,
-                                                             foreground_model=TransmissionEqualCouplings(),
-                                                             background_model=background.ComplexConstant(),
-                                                             errors=errors, **kwargs)
+        super(CCxSTFitterKnownMagnitude, self).__init__(frequency=frequency, data=data,
+                                                        foreground_model=SymmetricTransmission(),
+                                                        background_model=background.ComplexConstant(),
+                                                        errors=errors, **fit_kwds)
 
     def guess(self, frequency, data):
         phase_guess = np.angle(data[np.argmax(np.abs(data))])
         params = self.background_model.make_params(magnitude=self.background_magnitude, phase=phase_guess)
-        params['magnitude'].vary=False
-        background = self.background_model.eval(params=params, frequency=frequency)
-        params.update(self.foreground_model.guess(data=data / background, frequency=frequency))
+        params['magnitude'].vary = False
+        background_values = self.background_model.eval(params=params, frequency=frequency)
+        params.update(self.foreground_model.guess(data=data / background_values, frequency=frequency))
         return params
 
 
-class CCtimesTECFitterKnownCoupling(fitter.ResonatorFitter):
+class CCxSTFitterKnownCoupling(base.ResonatorFitter):
     """
     This class fits a composite model that is the product of the ComplexConstant background model and the
-    TransmissionEqualCouplings model.
+    SymmetricTransmission model.
 
     It should be used when the the coupling loss (i.e. the inverse coupling quality factor) is known, presumably from
     another measurement or a simulation, and when the cable delay has been calibrated so that the background phase is
     constant across the band.
     """
 
-    def __init__(self, frequency, data, coupling_loss, errors=None, **kwargs):
+    def __init__(self, frequency, data, coupling_loss, errors=None, **fit_kwds):
         """
         Fit the given data to a composite model that is the product of the ComplexConstant background model and the
-        TransmissionEqualCouplings model.
+        SymmetricTransmission model.
 
         :param frequency: an array of real frequencies at which the data was measured.
         :param data: an array of complex transmission data (NOT in dB).
@@ -121,13 +126,13 @@ class CCtimesTECFitterKnownCoupling(fitter.ResonatorFitter):
         :param errors: an array of complex numbers that are the standard errors of the mean of the data points; the
           errors for the real and imaginary parts may be different; if no errors are provided then all points will be
           weighted equally.
-        :param kwargs: keyword arguments passed directly to lmfit.model.Model.fit().
+        :param fit_kwds: keyword arguments passed directly to lmfit.model.Model.fit().
         """
         self.known_coupling_loss = coupling_loss
-        super(CCtimesTECFitterKnownCoupling, self).__init__(frequency=frequency, data=data,
-                                                            foreground_model=TransmissionEqualCouplings(),
-                                                            background_model=background.ComplexConstant(),
-                                                            errors=errors, **kwargs)
+        super(CCxSTFitterKnownCoupling, self).__init__(frequency=frequency, data=data,
+                                                       foreground_model=SymmetricTransmission(),
+                                                       background_model=background.ComplexConstant(),
+                                                       errors=errors, **fit_kwds)
 
     def guess(self, frequency, data):
         params = self.background_model.guess(data=self.data, frequency=self.frequency)
