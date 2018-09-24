@@ -3,8 +3,8 @@ This module contains models and fitters for resonators that are operated in the 
 """
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
 import lmfit
+import numpy as np
 
 from . import background, base
 
@@ -16,11 +16,15 @@ class Shunt(lmfit.model.Model):
     reference_point = 1 + 0j
 
     def __init__(self, *args, **kwds):
-        def func(frequency, resonance_frequency, internal_loss, coupling_loss, asymmetry):
+        """
+        :param args: arguments passed directly to lmfit.model.Model.__init__().
+        :param kwds: keywords passed directly to lmfit.model.Model.__init__().
+        """
+        def shunt(frequency, resonance_frequency, internal_loss, coupling_loss, asymmetry):
             detuning = frequency / resonance_frequency - 1
             return 1 - ((1 + 1j * asymmetry) /
                         (1 + (internal_loss + 2j * detuning) / coupling_loss))
-        super(Shunt, self).__init__(func=func, *args, **kwds)
+        super(Shunt, self).__init__(func=shunt, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
         # ToDo: use the lowest point of the smoothed data, being careful of edges
@@ -58,7 +62,7 @@ class ShuntFitter(base.ResonatorFitter):
         :param background_model: an instance (not the class) of a model representing the background response without the
           resonator; the default of background.ComplexConstant assumes that this is modeled well by a single complex
           constant at all frequencies.
-        :param errors: an array of complex numbers containing the standard
+        :param errors: an array of complex numbers containing the standard errors of the mean of the data points.
         :param kwds: keyword arguments passed directly to lmfit.model.Model.fit().
         """
         if background_model is None:

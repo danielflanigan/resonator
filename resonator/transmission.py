@@ -8,8 +8,8 @@ insteading of accepting one as a parameter.
 """
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
 import lmfit
+import numpy as np
 
 from . import background, base
 
@@ -27,10 +27,14 @@ class SymmetricTransmission(lmfit.model.Model):
     reference_point = 0.5 + 0j
 
     def __init__(self, *args, **kwargs):
-        def func(frequency, resonance_frequency, internal_loss, coupling_loss):
+        """
+        :param args: arguments passed directly to lmfit.model.Model.__init__().
+        :param kwds: keywords passed directly to lmfit.model.Model.__init__().
+        """
+        def symmetric_transmission(frequency, resonance_frequency, internal_loss, coupling_loss):
             detuning = frequency / resonance_frequency - 1
             return 1 / (1 + (internal_loss + 2j * detuning) / coupling_loss)
-        super(SymmetricTransmission, self).__init__(func=func, *args, **kwargs)
+        super(SymmetricTransmission, self).__init__(func=symmetric_transmission, *args, **kwargs)
 
     def guess(self, data, frequency=None, coupling_loss=None):
         """

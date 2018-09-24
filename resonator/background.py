@@ -3,8 +3,8 @@ This module contains models for the background response of a system.
 """
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
 import lmfit
+import numpy as np
 
 
 class One(lmfit.model.Model):
@@ -13,9 +13,9 @@ class One(lmfit.model.Model):
     """
 
     def __init__(self, *args, **kwds):
-        def func(frequency):
+        def one(frequency):
             return np.ones(frequency.size, dtype='complex')
-        super(One, self).__init__(func=func, *args, **kwds)
+        super(One, self).__init__(func=one, *args, **kwds)
 
     def guess(self, data, **kwds):
         return self.make_params()
@@ -30,9 +30,9 @@ class UnitNorm(lmfit.model.Model):
     """
 
     def __init__(self, *args, **kwds):
-        def func(frequency, phase):
+        def unit_norm(frequency, phase):
             return np.ones(frequency.size, dtype='complex') * np.exp(1j * phase)
-        super(UnitNorm, self).__init__(func=func, *args, **kwds)
+        super(UnitNorm, self).__init__(func=unit_norm, *args, **kwds)
 
     def guess(self, data, reference_point=1 + 0j, fraction=0.1, **kwds):
         params = self.make_params()
@@ -55,9 +55,9 @@ class ComplexConstant(lmfit.model.Model):
     """
 
     def __init__(self, *args, **kwds):
-        def func(frequency, magnitude, phase):
+        def complex_constant(frequency, magnitude, phase):
             return magnitude * np.exp(1j * phase) * np.ones(frequency.size)
-        super(ComplexConstant, self).__init__(func=func, *args, **kwds)
+        super(ComplexConstant, self).__init__(func=complex_constant, *args, **kwds)
 
     def guess(self, data, reference_point=1 + 0j, fraction=0.1, **kwds):
         """
@@ -92,16 +92,16 @@ class ConstantMagnitudeConstantDelay(lmfit.model.Model):
     The reference frequency is a fixed parameter that is set equal to the minimum frequency; using zero as the reference
     frequency would be simpler but this fails in practice because the frequency range is too small.
 
-    This is a reasonable model to use for data acquired with a VNA when the reference plane has not been set exactly and
-    the data magnitude  is constant. In order to fit the phase wrapping, the frequency range should be substantially
-    larger than the resonator linewidth and the frequency spacing should be substantially less than the period of the
-    phase wrapping.
+    This is a reasonable model to use for data acquired with a VNA when the reference plane has not been set and the
+    background is fairly flat. In order to fit the phase wrapping, the frequency range should be substantially larger
+    than the resonator linewidth and the frequency spacing should be substantially less than the period of the phase
+    wrapping.
     """
 
     def __init__(self, *args, **kwds):
-        def func(frequency, frequency_reference, delay, phase, magnitude):
+        def constant_magnitude_constant_delay(frequency, frequency_reference, delay, phase, magnitude):
             return magnitude * np.exp(1j * (2 * np.pi * (frequency - frequency_reference) * delay + phase))
-        super(ConstantMagnitudeConstantDelay, self).__init__(func=func, *args, **kwds)
+        super(ConstantMagnitudeConstantDelay, self).__init__(func=constant_magnitude_constant_delay, *args, **kwds)
 
     def guess(self, data, frequency=None, reference_point=1 + 0j, fraction=0.1, **kwds):
         params = self.make_params()
@@ -130,17 +130,18 @@ class LinearMagnitudeConstantDelay(lmfit.model.Model):
     reference frequency is a fixed parameter that is set equal to the minimum frequency; using zero as the reference
     frequency would be simpler but this fails in practice because the frequency range is too small.
 
-    This is a reasonable model to use for data acquired with a VNA when the reference plane has not been set exactly and
-    the data magnitude has some tilt. In order to fit the phase wrapping, the frequency range should be substantially
+    This is a reasonable model to use for data acquired with a VNA when the reference plane has not been set and the
+    background magnitude is not flat. In order to fit the phase wrapping, the frequency range should be substantially
     larger than the resonator linewidth and the frequency spacing should be substantially less than the period of the
     phase wrapping.
     """
 
     def __init__(self, *args, **kwds):
-        def func(frequency, frequency_reference, delay, phase, magnitude_slope, magnitude_reference):
+        def linear_magnitude_constant_delay(frequency, frequency_reference, delay, phase, magnitude_slope,
+                                            magnitude_reference):
             magnitude = magnitude_reference + magnitude_slope * (frequency - frequency_reference)
             return magnitude * np.exp(1j * (2 * np.pi * (frequency - frequency_reference) * delay + phase))
-        super(LinearMagnitudeConstantDelay, self).__init__(func=func, *args, **kwds)
+        super(LinearMagnitudeConstantDelay, self).__init__(func=linear_magnitude_constant_delay, *args, **kwds)
 
     def guess(self, data, frequency=None, reference_point=1 + 0j, **kwds):
         params = self.make_params()
@@ -157,19 +158,17 @@ class LinearMagnitudeConstantDelay(lmfit.model.Model):
         return params
 
 
-class KnownBackground(lmfit.model.Model):
+class Known(lmfit.model.Model):
     """
     This model represents background response that has been measured, so it has no free parameters.
-
-    Be warned that it has not been tested yet.
     """
 
     def __init__(self, measurement_frequency, measurement_data, *args, **kwds):
-        def func(frequency):
+        def known(frequency):
             data_real = np.interp(frequency, measurement_frequency, measurement_data.real)
             data_imag = np.interp(frequency, measurement_frequency, measurement_data.imag)
             return data_real + 1j * data_imag
-        super(KnownBackground, self).__init__(func=func, *args, **kwds)
+        super(Known, self).__init__(func=known, *args, **kwds)
 
     def guess(self, data, **kwds):
         return self.make_params()

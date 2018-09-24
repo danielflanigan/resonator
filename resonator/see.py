@@ -1,12 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 try:
     color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']  # matplotlib >= 1.5
 except KeyError:
     color_cycle = plt.rcParams['axes.color_cycle']  # matplotlib < 1.5
-
+import numpy as np
 
 DEFAULT_NUM_MODEL_POINTS = 10000
 

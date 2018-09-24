@@ -1,13 +1,10 @@
 """
 This module contains the ResonatorFitter class and the MeasurementModelResonance object.
 """
-
 from __future__ import absolute_import, division, print_function
-
 from collections import namedtuple
 
 import numpy as np
-import lmfit
 
 from . import background
 
@@ -23,7 +20,6 @@ MeasurementModelResonance = namedtuple('MeasurementModelResonance',
                                                     'resonance_frequency', 'resonance_data'])
 
 
-
 class ResonatorFitter(object):
     """
     This class is a wrapper for composite models that represent the response of a resonator multiplied by the background
@@ -34,8 +30,6 @@ class ResonatorFitter(object):
         """
         Fit the given data using the given resonator model.
 
-        Parameters
-        ----------
         :param frequency: an array of floats containing the frequencies at which the data was measured.
         :param data: an array of complex numbers containing the data, probably forward transmission S_{21} or forward
           reflection S_{11}.
@@ -58,7 +52,7 @@ class ResonatorFitter(object):
             raise TypeError("Resonator errors must be complex.")
         if errors is None:
             weights = None
-        else:
+        else:  # See https://github.com/numpy/numpy/issues/5261
             weights = 1 / errors.real + 1j / errors.imag
         self.frequency = frequency
         self.data = data
@@ -133,15 +127,22 @@ class ResonatorFitter(object):
         r.result = r.fit(guess=improved_guess)
 
         :param guess: a lmfit.Parameters object containing reasonable initial values; the default is created by calling
-          self.guess(), which uses the guessing functions of the background then the foreground.
+          self.guess(), which uses the guessing functions of first the background and then the foreground.
         :param fit_kwds: a dict of keywords passed directly to lmfit.model.Model.fit().
-        :return: None
+        :return: lmfit.model.ModelResult
         """
         if guess is None:
             guess = self.guess(frequency=self.frequency, data=self.data)
         return self.model.fit(frequency=self.frequency, data=self.data, weights=self.weights, params=guess, **fit_kwds)
 
     def evaluate_model(self, frequency=None, params=None):
+        """
+        Evaluate the total model (background * foreground) at the given frequencies with the given parameters.
+
+        :param frequency: float or array of floats; the default is to use the frequencies corresponding to the data.
+        :param params: lmfit.Parameters object; the default is to use the current best-fit parameters.
+        :return: array of complex.
+        """
         if params is None:
             params = self.result.params
         if frequency is None:
@@ -150,13 +151,13 @@ class ResonatorFitter(object):
 
     def remove_background(self, frequency, data):
         """
-        Normalize data to the appropriate plane by dividing it by the background evaluated at the given frequencies
+        Normalize data to the foreground plane by dividing it by the background evaluated at the given frequencies
         using the current best fit params.
 
-        frequency : float or array of floats
-            Frequency (in same units as the model was instantiated) at which to remove the background.
-        data : complex or array of complex
-            Raw data to be normalized.
+        For linear resonators, the returned data should produce a circle somewhere in the complex plane.
+
+        :param frequency: float or array of floats representing frequencies corresponding to the given data.
+        :param data: complex or array of complex data to be normalized.
         """
         return data / self.background_model.eval(params=self.result.params, frequency=frequency)
 
@@ -199,10 +200,10 @@ class ResonatorFitter(object):
     def invert(self, time_ordered_data):
         """
         Invert the resonator model and return the time-ordered resonator parameters x(t) and Q_i^{-1}(t) that correspond
-        to the given time-ordered data. These data should be normalized appropriately, depending on the resonance
-        coupling configuration. For the shunt configuration, the data should equal 1 + 0j far from resonance. For the
-        reflection configuration, the data should equal -1 + 0j far from resonance. For the transmission configuration,
-        the data should be normalized in a way to be determined...
+        to the given time-ordered data. These data should be already normalized to the foreground (resonator) plane: for
+        the shunt configuration, the data should equal 1 + 0j far from resonance; for the reflection configuration, the
+        data should equal -1 + 0j far from resonance; for the transmission configuration, the data should be normalized
+        in a way to be determined...
 
         Parameters
         ----------
@@ -215,11 +216,17 @@ class ResonatorFitter(object):
             The time-ordered values of the fractional frequency detuning x = f_g / f_r - 1, where f_g is the generator
             (or readout) frequency.
         ndarray (real)
-            The time-ordered values of the inverse internal quality factor loss_i = 1 / Q_i.
+            The time-ordered values of the inverse internal quality factor internal_loss = 1 / Q_i.
         """
         raise NotImplementedError("Subclasses should implement this using their parameters.")
 
     def remove_background_and_invert(self, time_ordered_data, measurement_frequency):
+        """
+
+        :param time_ordered_data:
+        :param measurement_frequency:
+        :return:
+        """
         return self.invert(self.remove_background(frequency=measurement_frequency, data=time_ordered_data))
 
     # Aliases for common resonator properties

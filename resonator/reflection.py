@@ -3,8 +3,8 @@ This module contains models and fitters for resonators that are operated in the 
 """
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
 import lmfit
+import numpy as np
 
 from . import background, base
 
@@ -17,15 +17,13 @@ class Reflection(lmfit.model.Model):
 
     def __init__(self, *args, **kwds):
         """
-        Instantiate.
-
         :param args: arguments passed directly to lmfit.model.Model.__init__().
-        :param kwds: keyword arguments passed directly to lmfit.model.Model.__init__().
+        :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
-        def func(frequency, resonance_frequency, internal_loss, coupling_loss):
+        def reflection(frequency, resonance_frequency, internal_loss, coupling_loss):
             detuning = frequency / resonance_frequency - 1
             return -1 + (2 / (1 + (internal_loss + 2j * detuning) / coupling_loss))
-        super(Reflection, self).__init__(func=func, *args, **kwds)
+        super(Reflection, self).__init__(func=reflection, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
         params = self.make_params()
@@ -62,5 +60,12 @@ class ReflectionFitter(base.ResonatorFitter):
         return detuning, internal_loss
 
 
+class KnownReflectionFitter(ReflectionFitter):
 
-
+    def __init__(self, frequency, data, background_frequency, background_data, errors=None, **kwds):
+        foreground_model = Reflection()
+        # Compensate for the pi phase shift present in the reflected background data.
+        background_model = background.Known(measurement_frequency=background_frequency,
+                                            measurement_data=background_data / foreground_model.reference_point)
+        super(ReflectionFitter, self).__init__(frequency=frequency, data=data, foreground_model=foreground_model,
+                                               background_model=background_model, errors=errors, **kwds)
