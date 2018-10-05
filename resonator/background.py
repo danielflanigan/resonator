@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 import lmfit
 import numpy as np
 
+# ToDo: rename these by their free parameters -- Phase, MagnitudePhase, etc.
 
 class One(lmfit.model.Model):
     """
@@ -14,7 +15,7 @@ class One(lmfit.model.Model):
 
     def __init__(self, *args, **kwds):
         def one(frequency):
-            return np.ones(frequency.size, dtype='complex')
+            return np.ones_like(frequency, dtype='complex')
         super(One, self).__init__(func=one, *args, **kwds)
 
     def guess(self, data, **kwds):
@@ -31,7 +32,7 @@ class UnitNorm(lmfit.model.Model):
 
     def __init__(self, *args, **kwds):
         def unit_norm(frequency, phase):
-            return np.ones(frequency.size, dtype='complex') * np.exp(1j * phase)
+            return np.ones_like(frequency) * np.exp(1j * phase)
         super(UnitNorm, self).__init__(func=unit_norm, *args, **kwds)
 
     def guess(self, data, reference_point=1 + 0j, fraction=0.1, **kwds):
@@ -56,7 +57,7 @@ class ComplexConstant(lmfit.model.Model):
 
     def __init__(self, *args, **kwds):
         def complex_constant(frequency, magnitude, phase):
-            return magnitude * np.exp(1j * phase) * np.ones(frequency.size)
+            return magnitude * np.exp(1j * phase) * np.ones_like(frequency)
         super(ComplexConstant, self).__init__(func=complex_constant, *args, **kwds)
 
     def guess(self, data, reference_point=1 + 0j, fraction=0.1, **kwds):
@@ -138,8 +139,8 @@ class LinearMagnitudeConstantDelay(lmfit.model.Model):
 
     def __init__(self, *args, **kwds):
         def linear_magnitude_constant_delay(frequency, frequency_reference, delay, phase, magnitude_slope,
-                                            magnitude_reference):
-            magnitude = magnitude_reference + magnitude_slope * (frequency - frequency_reference)
+                                            magnitude_offset):
+            magnitude = magnitude_offset + magnitude_slope * (frequency - frequency_reference)
             return magnitude * np.exp(1j * (2 * np.pi * (frequency - frequency_reference) * delay + phase))
         super(LinearMagnitudeConstantDelay, self).__init__(func=linear_magnitude_constant_delay, *args, **kwds)
 
