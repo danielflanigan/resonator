@@ -14,6 +14,8 @@ import numpy as np
 from . import background, base
 
 
+# ToDo: write a transmission class that assumes nothing about the coupling and fits for a single total loss.
+
 class SymmetricTransmission(lmfit.model.Model):
     """
     This class models a resonator operated in transmission. It assumes that two ports have equal coupling losses (or,

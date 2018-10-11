@@ -30,6 +30,15 @@ resonance_defaults = {'linestyle': 'none',
                       'color': color_cycle[1],
                       'alpha': 1}
 
+initial_defaults = {'linestyle': ':',
+                    'linewidth': 0.3,
+                    'color': color_cycle[2],
+                    'alpha': 1}
+
+triptych_figure_defaults = {}
+
+triptych_gridspec_defaults = {'hspace': 0.4,
+                              'wspace': 0.4}
 
 frequency_scale_to_unit = {1: 'Hz',
                            1e-3: 'kHz',
@@ -187,3 +196,35 @@ def real_and_imaginary(resonator, axes, normalize=False, num_model_points=DEFAUL
         axes.set_xlabel('real')
         axes.set_ylabel('imag')
     return mmr
+
+
+def triptych(resonator, figure=None, three_axes=None, normalize=False, num_model_points=DEFAULT_NUM_MODEL_POINTS,
+             frequency_scale=1, three_ticks=True, decibels=True, degrees=True, equal_aspect=True, label_axes=True,
+             figure_settings=None, gridspec_settings=None, measurement_settings=None, model_settings=None,
+             resonance_settings=None):
+    if three_axes is None:
+        gridspec_kwds = triptych_gridspec_defaults
+        if gridspec_settings is not None:
+            gridspec_kwds.update(gridspec_settings)
+        figure_kwds = triptych_figure_defaults
+        if figure_settings is None:
+            figure_kwds.update(figure_settings)
+        figure = plt.figure(**figure_kwds)
+        gridspec = plt.GridSpec(2, 2, **gridspec_kwds)
+        ax_magnitude = figure.add_subplot(plt.subplot(gridspec.new_subplotspec((0, 0), 1, 1)))
+        ax_phase = figure.add_subplot(plt.subplot(gridspec.new_subplotspec((1, 0), 1, 1)))
+        ax_complex = figure.add_subplot(plt.subplot(gridspec.new_subplotspec((0, 1), 2, 1)))
+    else:
+        ax_magnitude, ax_phase, ax_complex = three_axes
+    magnitude_vs_frequency(resonator=resonator, axes=ax_magnitude, normalize=normalize,
+                           num_model_points=num_model_points, frequency_scale=frequency_scale, three_ticks=three_ticks,
+                           decibels=decibels, label_axes=label_axes, measurement_settings=measurement_settings,
+                           model_settings=model_settings, resonance_settings=resonance_settings)
+    phase_vs_frequency(resonator=resonator, axes=ax_phase, normalize=normalize, num_model_points=num_model_points,
+                       frequency_scale=frequency_scale, three_ticks=three_ticks, degrees=degrees, label_axes=label_axes,
+                       measurement_settings=measurement_settings, model_settings=model_settings,
+                       resonance_settings=resonance_settings)
+    real_and_imaginary(resonator=resonator, axes=ax_complex, normalize=normalize, num_model_points=num_model_points,
+                       equal_aspect=equal_aspect, label_axes=label_axes, measurement_settings=measurement_settings,
+                       model_settings=model_settings, resonance_settings=resonance_settings)
+    return figure, three_axes

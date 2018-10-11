@@ -9,33 +9,39 @@ import numpy as np
 from . import background, base, nonlinear
 
 
-# Equations
-
-def guess_smooth(frequency, data):
-    # ToDo: use the lowest point of the smoothed data, being careful of edges
-    resonance_frequency = frequency[np.argmin(np.abs(data))]
-    width = frequency.size // 10
-    gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
-    gaussian /= np.sum(gaussian)
-    smoothed = np.convolve(gaussian, np.abs(data), mode='same')
-    derivative = np.convolve(np.array([1, -1]), smoothed, mode='same')
-    # ToDo: investigate how well this is actually working -- for clean data it should calculate the right linewidth
-    # Exclude the edges, which are affected by zero padding.
-    linewidth = (frequency[np.argmax(derivative[width:-width])] -
-                 frequency[np.argmin(derivative[width:-width])])
-    internal_plus_coupling = linewidth / resonance_frequency
-    internal_over_coupling = 1 / (1 / np.min(np.abs(data)) - 1)
-    coupling_loss = internal_plus_coupling / (1 + internal_over_coupling)
-    internal_loss = internal_plus_coupling * internal_over_coupling / (1 + internal_over_coupling)
-    return resonance_frequency, coupling_loss, internal_loss
-
 # Models
 
-class Shunt(lmfit.model.Model):
+class AbstractShunt(lmfit.model.Model):
     """
-    This class models a resonator operated in the shunt-coupled configuration.
+    This is an abstract class that models a resonator operated in the shunt-coupled configuration.
     """
     reference_point = 1 + 0j
+
+    @staticmethod
+    def guess_smooth(frequency, data):
+        # ToDo: use the lowest point of the smoothed data, being careful of edges
+        resonance_frequency = frequency[np.argmin(np.abs(data))]
+        width = frequency.size // 10
+        gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
+        gaussian /= np.sum(gaussian)
+        smoothed = np.convolve(gaussian, np.abs(data), mode='same')
+        derivative = np.convolve(np.array([1, -1]), smoothed, mode='same')
+        # ToDo: investigate how well this is actually working -- for clean data it should calculate the right linewidth
+        # Exclude the edges, which are affected by zero padding.
+        linewidth = (frequency[np.argmax(derivative[width:-width])] -
+                     frequency[np.argmin(derivative[width:-width])])
+        internal_plus_coupling = linewidth / resonance_frequency
+        internal_over_coupling = 1 / (1 / np.min(np.abs(data)) - 1)
+        coupling_loss = internal_plus_coupling / (1 + internal_over_coupling)
+        internal_loss = internal_plus_coupling * internal_over_coupling / (1 + internal_over_coupling)
+        return resonance_frequency, coupling_loss, internal_loss
+
+
+# ToDo: rename to LinearShunt
+class Shunt(AbstractShunt):
+    """
+    This class models a linear resonator operated in the shunt-coupled configuration.
+    """
 
     def __init__(self, *args, **kwds):
         """
@@ -48,43 +54,55 @@ class Shunt(lmfit.model.Model):
                         (1 + (internal_loss + 2j * detuning) / coupling_loss))
         super(Shunt, self).__init__(func=shunt, *args, **kwds)
 
-
-# ToDo: values will be nonphysical until factor of 2 on RHS of input-output equation is handled correctly.
-class ShuntNonlinear(lmfit.model.Model):
-    """
-    This class models a resonator operated in the shunt-coupled configuration with a Kerr-type nonlinearity.
-    """
-    reference_point = 1 + 0j
-
-    def __init__(self, choose, *args, **kwds):
-        """
-        :param choose: a numpy ufunc; see nonlinear.KX documentation.
-        :param args: arguments passed directly to lmfit.model.Model.__init__().
-        :param kwds: keywords passed directly to lmfit.model.Model.__init__().
-        """
-        self.choose = choose
-
-        def shunt_nonlinear(frequency, resonance_frequency, internal_loss, coupling_loss, asymmetry, KXin):
-            detuning = frequency / resonance_frequency - 1
-            kerr_detuning = nonlinear.kerr_detuning(detuning=detuning, coupling_loss=coupling_loss, internal_loss=internal_loss,
-                                                    KXin=KXin, choose=self.choose)
-            return 1 - ((1 + 1j * asymmetry) /
-                        (1 + (internal_loss + 2j * (detuning - kerr_detuning)) / coupling_loss))
-        super(ShuntNonlinear, self).__init__(func=shunt_nonlinear, *args, **kwds)
-
     def guess(self, data=None, frequency=None, **kwds):
-        resonance_frequency, coupling_loss, internal_loss = guess_smooth(frequency=frequency, data=data)
+        resonance_frequency, coupling_loss, internal_loss = self.guess_smooth(frequency=frequency, data=data)
         params = self.make_params()
         params['resonance_frequency'].set(value=resonance_frequency, min=frequency.min(), max=frequency.max())
         params['coupling_loss'].set(value=coupling_loss, min=1e-12, max=1)
         params['internal_loss'].set(value=internal_loss, min=1e-12, max=1)
         params['asymmetry'].set(value=0, min=-10, max=10)
-        params['KXin'].set(value=0)
+        return params
+
+
+class ShuntNonlinear(AbstractShunt):
+    """
+    This class models a resonator operated in the shunt-coupled configuration with a Kerr-type nonlinearity.
+    """
+
+    # See nonlinear.kerr_detuning()
+    input_rate_coefficient = 1 / 2
+
+    def __init__(self, choose, *args, **kwds):
+        """
+        :param choose: a numpy ufunc; see nonlinear.kerr_detuning().
+        :param args: arguments passed directly to lmfit.model.Model.__init__().
+        :param kwds: keywords passed directly to lmfit.model.Model.__init__().
+        """
+        def shunt_nonlinear(frequency, resonance_frequency, internal_loss, coupling_loss, asymmetry,
+                            normalized_input_rate):
+            detuning = frequency / resonance_frequency - 1
+            kerr_detuning = nonlinear.kerr_detuning(detuning=detuning, coupling_loss=coupling_loss,
+                                                    internal_loss=internal_loss,
+                                                    normalized_input_rate=normalized_input_rate,
+                                                    input_rate_coefficient=self.input_rate_coefficient, choose=choose)
+            return 1 - ((1 + 1j * asymmetry) /
+                        (1 + (internal_loss + 2j * (detuning - kerr_detuning)) / coupling_loss))
+        super(ShuntNonlinear, self).__init__(func=shunt_nonlinear, *args, **kwds)
+
+    def guess(self, data=None, frequency=None, **kwds):
+        resonance_frequency, coupling_loss, internal_loss = self.guess_smooth(frequency=frequency, data=data)
+        params = self.make_params()
+        params['resonance_frequency'].set(value=resonance_frequency, min=frequency.min(), max=frequency.max())
+        params['coupling_loss'].set(value=coupling_loss, min=1e-12, max=1)
+        params['internal_loss'].set(value=internal_loss, min=1e-12, max=1)
+        params['asymmetry'].set(value=0, min=-10, max=10)
+        params['normalized_input_rate'].set(value=0)
         return params
 
 
 # ResonatorFitters
 
+# ToDo: rename to LinearShuntFitter
 class ShuntFitter(base.ResonatorFitter):
     """
     This class fits data from a linear shunt-coupled resonator.

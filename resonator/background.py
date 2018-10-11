@@ -152,10 +152,10 @@ class LinearMagnitudeConstantDelay(lmfit.model.Model):
                                                   np.unwrap(np.angle(data)) - np.angle(reference_point), 1)
         params['phase'].set(value=phase_reference, min=phase_reference - np.pi, max=phase_reference + np.pi)
         params['delay'].set(value=phase_slope / (2 * np.pi))
-        magnitude_slope, magnitude_reference = np.polyfit(frequency - frequency_reference,
-                                                          np.abs(data) / np.abs(reference_point), 1)
+        magnitude_slope, magnitude_offset = np.polyfit(frequency - frequency_reference,
+                                                       np.abs(data) / np.abs(reference_point), 1)
         params['magnitude_slope'].set(value=magnitude_slope)
-        params['magnitude_reference'].set(value=magnitude_reference)
+        params['magnitude_offset'].set(value=magnitude_offset)
         return params
 
 
