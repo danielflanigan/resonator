@@ -75,7 +75,12 @@ def kerr_detuning(detuning, coupling_loss, internal_loss, normalized_input_rate,
 
     # One real root
     if one_real.any():
-        cc_one_real = np.cbrt((delta1[one_real] + np.sqrt(delta1[one_real] ** 2 - 4 * delta0[one_real] ** 3)) / 2)
+        # One can choose either sign of the square root as long as the argument of the cube root is nonzero.
+        square_root = np.sqrt(delta1[one_real] ** 2 - 4 * delta0[one_real] ** 3)
+        plus = (delta1[one_real] + square_root) / 2
+        minus = (delta1[one_real] - square_root) / 2
+        cbrt_argument = np.where(plus != 0, plus, minus)
+        cc_one_real = np.cbrt(cbrt_argument)
         roots[one_real] = np.real(-(b[one_real] + cc_one_real + delta0[one_real] / cc_one_real) / 3)
 
     if is_scalar or is_zero_size:
