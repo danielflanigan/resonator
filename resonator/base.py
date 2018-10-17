@@ -357,59 +357,48 @@ class ResonatorFitter(object):
         return self.total_quality_factor_error
 
     @property
-    def coupling_energy_loss_rate(self):
-        """The coupling energy loss rate."""
+    def coupling_energy_decay_rate(self):
+        """The energy decay rate through the coupling to the output port."""
         return self.omega_r * self.coupling_loss
 
     @property
-    def coupling_energy_loss_rate_error(self):
+    def coupling_energy_decay_rate_error(self):
         """
-        The standard error of the coupling energy loss rate, calculated by assuming that the errors of the resonance
+        The standard error of the coupling energy decay rate, calculated by assuming that the errors of the resonance
         frequency and coupling loss are independent.
         """
-        return self.coupling_energy_loss_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2
-                                                 + (self.coupling_loss_error / self.coupling_loss) ** 2) ** (1 / 2)
+        return self.coupling_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2
+                                                  + (self.coupling_loss_error / self.coupling_loss) ** 2) ** (1 / 2)
     @property
-    def internal_energy_loss_rate(self):
-        """The internal energy loss rate."""
+    def internal_energy_decay_rate(self):
+        """The energy decay rate due to all channels other than the output port."""
         return self.omega_r * self.internal_loss
 
     @property
-    def internal_energy_loss_rate_error(self):
+    def internal_energy_decay_rate_error(self):
         """
-        The standard error of the coupling energy loss rate, calculated by assuming that the errors of the resonance
+        The standard error of the coupling energy decay rate, calculated by assuming that the errors of the resonance
         frequency and internal loss are independent.
         """
-        return self.internal_energy_loss_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
-                                                 (self.internal_loss_error / self.internal_loss) ** 2) ** (1 / 2)
+        return self.internal_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
+                                                  (self.internal_loss_error / self.internal_loss) ** 2) ** (1 / 2)
 
     @property
-    def total_energy_loss_rate(self):
+    def total_energy_decay_rate(self):
         """The total (coupling plus internal) energy loss rate."""
         return self.omega_r * (self.internal_loss + self.coupling_loss)
 
     @property
-    def total_energy_loss_rate_error(self):
+    def total_energy_decay_rate_error(self):
         """
-        The total energy loss rate, calculated by assuming that the errors of the resonance frequency, internal loss,
+        The total energy decay rate, calculated by assuming that the errors of the resonance frequency, internal loss,
         and coupling loss are independent.
         """
-        return self.total_energy_loss_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
-                                              (self.total_loss_error / self.total_loss) ** 2) ** (1 / 2)
-
-
-# ToDo: add photon number calculations
-
-class LinearResonatorFitter(ResonatorFitter):
+        return self.total_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
+                                               (self.total_loss_error / self.total_loss) ** 2) ** (1 / 2)
 
     def photon_number(self, input_frequency, input_rate):
         raise NotImplementedError("Subclasses should perform this calculation.")
 
     def photon_number_from_power(self, input_frequency, input_power_dBm):
         return self.photon_number(input_frequency=input_frequency, input_rate=1e-3 * 10 ** (input_power_dBm / 10))
-
-
-# ToDo: move content of nonlinear.py here
-class NonlinearResonatorFitter(ResonatorFitter):
-
-    input_rate_coefficient = None

@@ -203,11 +203,11 @@ def triptych(resonator, figure=None, three_axes=None, normalize=False, num_model
              figure_settings=None, gridspec_settings=None, measurement_settings=None, model_settings=None,
              resonance_settings=None):
     if three_axes is None:
-        gridspec_kwds = triptych_gridspec_defaults
+        gridspec_kwds = triptych_gridspec_defaults.copy()
         if gridspec_settings is not None:
             gridspec_kwds.update(gridspec_settings)
-        figure_kwds = triptych_figure_defaults
-        if figure_settings is None:
+        figure_kwds = triptych_figure_defaults.copy()
+        if figure_settings is not None:
             figure_kwds.update(figure_settings)
         figure = plt.figure(**figure_kwds)
         gridspec = plt.GridSpec(2, 2, **gridspec_kwds)

@@ -37,7 +37,6 @@ class AbstractShunt(lmfit.model.Model):
         return resonance_frequency, coupling_loss, internal_loss
 
 
-# ToDo: rename to LinearShunt
 class Shunt(AbstractShunt):
     """
     This class models a linear resonator operated in the shunt-coupled configuration.
@@ -48,10 +47,12 @@ class Shunt(AbstractShunt):
         :param args: arguments passed directly to lmfit.model.Model.__init__().
         :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
+
         def shunt(frequency, resonance_frequency, internal_loss, coupling_loss, asymmetry):
             detuning = frequency / resonance_frequency - 1
             return 1 - ((1 + 1j * asymmetry) /
                         (1 + (internal_loss + 2j * detuning) / coupling_loss))
+
         super(Shunt, self).__init__(func=shunt, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
@@ -64,30 +65,30 @@ class Shunt(AbstractShunt):
         return params
 
 
-class ShuntNonlinear(AbstractShunt):
+class KerrShunt(AbstractShunt, nonlinear.Kerr):
     """
     This class models a resonator operated in the shunt-coupled configuration with a Kerr-type nonlinearity.
     """
 
-    # See nonlinear.kerr_detuning()
-    input_rate_coefficient = 1 / 2
+    # See nonlinear.Kerr.kerr_detuning()
+    geometry_coefficient = 1 / 2
 
     def __init__(self, choose, *args, **kwds):
         """
-        :param choose: a numpy ufunc; see nonlinear.kerr_detuning().
+        :param choose: a numpy ufunc; see nonlinear.Kerr.kerr_detuning().
         :param args: arguments passed directly to lmfit.model.Model.__init__().
         :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
-        def shunt_nonlinear(frequency, resonance_frequency, internal_loss, coupling_loss, asymmetry,
-                            normalized_input_rate):
+
+        def kerr_shunt(frequency, resonance_frequency, internal_loss, coupling_loss, asymmetry, normalized_input_rate):
             detuning = frequency / resonance_frequency - 1
-            kerr_detuning = nonlinear.kerr_detuning(detuning=detuning, coupling_loss=coupling_loss,
-                                                    internal_loss=internal_loss,
-                                                    normalized_input_rate=normalized_input_rate,
-                                                    input_rate_coefficient=self.input_rate_coefficient, choose=choose)
+            kerr_detuning = self.kerr_detuning(detuning=detuning, coupling_loss=coupling_loss,
+                                               internal_loss=internal_loss, kerr_input=normalized_input_rate,
+                                               geometry_coefficient=self.input_rate_coefficient, choose=choose)
             return 1 - ((1 + 1j * asymmetry) /
                         (1 + (internal_loss + 2j * (detuning - kerr_detuning)) / coupling_loss))
-        super(ShuntNonlinear, self).__init__(func=shunt_nonlinear, *args, **kwds)
+
+        super(KerrShunt, self).__init__(func=kerr_shunt, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
         resonance_frequency, coupling_loss, internal_loss = self.guess_smooth(frequency=frequency, data=data)
@@ -102,7 +103,6 @@ class ShuntNonlinear(AbstractShunt):
 
 # ResonatorFitters
 
-# ToDo: rename to LinearShuntFitter
 class ShuntFitter(base.ResonatorFitter):
     """
     This class fits data from a linear shunt-coupled resonator.
@@ -132,20 +132,18 @@ class ShuntFitter(base.ResonatorFitter):
         return detuning, internal_loss
 
 
-class ShuntNonlinearFitter(base.ResonatorFitter):
+class KerrShuntFitter(base.ResonatorFitter):
     """
     This class fits data from a shunt-coupled resonator with a Kerr-type nonlinearity.
     """
 
-    def __init__(self, frequency, data, background_model=None, errors=None, choose=np.min, **kwds):
+    def __init__(self, frequency, data, background_model=None, errors=None, choose=np.max, **kwds):
         if background_model is None:
             background_model = background.ComplexConstant()
-        super(ShuntNonlinearFitter, self).__init__(frequency=frequency, data=data,
-                                                   foreground_model=ShuntNonlinear(choose=choose),
-                                                   background_model=background_model, errors=errors, **kwds)
+        super(KerrShuntFitter, self).__init__(frequency=frequency, data=data,
+                                              foreground_model=KerrShunt(choose=choose),
+                                              background_model=background_model, errors=errors, **kwds)
 
     # ToDo: math
     def invert(self, scattering_data):
         pass
-
-

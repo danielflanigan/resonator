@@ -64,28 +64,29 @@ class Reflection(AbstractReflection):
 
 
 # ToDo: test with new photon number code
-class ReflectionNonlinear(AbstractReflection):
+class KerrReflection(AbstractReflection, nonlinear.Kerr):
     """
     This class models a resonator operated in reflection with a Kerr-type nonlinearity.
     """
 
-    # See nonlinear.kerr_detuning()
-    input_rate_coefficient = 1
+    # See nonlinear.Kerr.kerr_detuning()
+    geometry_coefficient = 1
 
     def __init__(self, choose, *args, **kwds):
         """
-        :param choose: a numpy ufunc; see nonlinear.kerr_detuning().
+        :param choose: a numpy ufunc; see nonlinear.Kerr.kerr_detuning().
         :param args: arguments passed directly to lmfit.model.Model.__init__().
         :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
-        def reflection_nonlinear(frequency, resonance_frequency, coupling_loss, internal_loss, normalized_input_rate):
+
+        def kerr_reflection(frequency, resonance_frequency, coupling_loss, internal_loss, normalized_input_rate):
             detuning = frequency / resonance_frequency - 1
-            kerr_detuning = nonlinear.kerr_detuning(detuning=detuning, coupling_loss=coupling_loss,
-                                                    internal_loss=internal_loss,
-                                                    normalized_input_rate=normalized_input_rate,
-                                                    input_rate_coefficient=self.input_rate_coefficient, choose=choose)
+            kerr_detuning = self.kerr_detuning(detuning=detuning, coupling_loss=coupling_loss,
+                                               internal_loss=internal_loss, kerr_input=normalized_input_rate,
+                                               geometry_coefficient=self.input_rate_coefficient, choose=choose)
             return -1 + (2 / (1 + (internal_loss + 2j * (detuning - kerr_detuning)) / coupling_loss))
-        super(ReflectionNonlinear, self).__init__(func=reflection_nonlinear, *args, **kwds)
+
+        super(KerrReflection, self).__init__(func=kerr_reflection, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
         resonance_frequency, coupling_loss, internal_loss = self.guess_smooth(frequency=frequency, data=data)
@@ -99,10 +100,10 @@ class ReflectionNonlinear(AbstractReflection):
 
 # ResonatorFitters
 
-#ToDo: rename to LinearReflectionFitter
+# ToDo: rename to LinearReflectionFitter
 class ReflectionFitter(base.ResonatorFitter):
     """
-    This class fits data from a resonator operated in reflection.
+    This class fits data from a linear resonator operated in reflection.
     """
 
     def __init__(self, frequency, data, background_model=None, errors=None, **kwds):
@@ -118,7 +119,6 @@ class ReflectionFitter(base.ResonatorFitter):
         return detuning, internal_loss
 
 
-# ToDo: rename to KnownXLinearReflectionFitter
 class KnownReflectionFitter(ReflectionFitter):
     """
     This class fits data from a linear resonator operated in reflection.
@@ -133,20 +133,19 @@ class KnownReflectionFitter(ReflectionFitter):
                                                background_model=background_model, errors=errors, **kwds)
 
 
-# ToDo: rename to NonlinearReflectionFitter
-class ReflectionNonlinearFitter(base.ResonatorFitter):
+class KerrReflectionFitter(base.ResonatorFitter):
     """
     This class fits data from a resonator operated in reflection with a Kerr-type nonlinearity.
     """
     # ToDo: add static methods to choose roots
 
     # ToDo: figure out how to handle knowledge of kerr or input power
-    def __init__(self, frequency, data, background_model=None, errors=None, choose=np.min, **kwds):
+    def __init__(self, frequency, data, background_model=None, errors=None, choose=np.max, **kwds):
         if background_model is None:
             background_model = background.ComplexConstant()
-        super(ReflectionNonlinearFitter, self).__init__(frequency=frequency, data=data,
-                                                        foreground_model=ReflectionNonlinear(choose=choose),
-                                                        background_model=background_model, errors=errors, **kwds)
+        super(KerrReflectionFitter, self).__init__(frequency=frequency, data=data,
+                                                   foreground_model=KerrReflection(choose=choose),
+                                                   background_model=background_model, errors=errors, **kwds)
 
     # ToDo: math
     def invert(self, scattering_data):
