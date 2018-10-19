@@ -2,38 +2,50 @@
 Plot resonator data and fits on matplotlib Axes.
 """
 # ToDo: replace mmr with method calls
+# ToDo: functions should create their own figure and axes if axes==None, and return figure, axes in that case
+
 from __future__ import absolute_import, division, print_function
 
 import matplotlib.pyplot as plt
+
 try:
     color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']  # matplotlib >= 1.5
 except KeyError:
     color_cycle = plt.rcParams['axes.color_cycle']  # matplotlib < 1.5
 import numpy as np
 
-DEFAULT_NUM_MODEL_POINTS = 10000
+default_num_model_points = 10000
 
 measurement_defaults = {'linestyle': 'none',
                         'marker': '.',
                         'markersize': 2,
                         'color': 'gray',
-                        'alpha': 1}
+                        'alpha': 1,
+                        'label': 'data'}
 
 model_defaults = {'linestyle': '-',
                   'linewidth': 0.3,
                   'color': color_cycle[0],
-                  'alpha': 1}
+                  'alpha': 1,
+                  'label': 'best-fit'}
 
 resonance_defaults = {'linestyle': 'none',
                       'marker': '.',
                       'markersize': 3,
                       'color': color_cycle[1],
-                      'alpha': 1}
+                      'alpha': 1,
+                      'label': 'resonance'}
 
 initial_defaults = {'linestyle': ':',
                     'linewidth': 0.3,
                     'color': color_cycle[2],
-                    'alpha': 1}
+                    'alpha': 1,
+                    'label': 'initial'}
+
+photon_number_defaults = {'linestyle': '-',
+                          'linewidth': 0.3,
+                          'color': color_cycle[0],
+                          'alpha': 1}
 
 triptych_figure_defaults = {}
 
@@ -47,7 +59,7 @@ frequency_scale_to_unit = {1: 'Hz',
                            1e-12: 'THz'}
 
 
-def magnitude_vs_frequency(resonator, axes, normalize=False, num_model_points=DEFAULT_NUM_MODEL_POINTS,
+def magnitude_vs_frequency(resonator, axes, normalize=False, num_model_points=default_num_model_points,
                            frequency_scale=1, three_ticks=True, decibels=True, label_axes=True,
                            measurement_settings=None, model_settings=None, resonance_settings=None):
     """
@@ -102,7 +114,7 @@ def magnitude_vs_frequency(resonator, axes, normalize=False, num_model_points=DE
     return mmr
 
 
-def phase_vs_frequency(resonator, axes, normalize=False, num_model_points=DEFAULT_NUM_MODEL_POINTS,
+def phase_vs_frequency(resonator, axes, normalize=False, num_model_points=default_num_model_points,
                        frequency_scale=1, three_ticks=True, degrees=True, label_axes=True,
                        measurement_settings=None, model_settings=None, resonance_settings=None):
     """
@@ -157,7 +169,7 @@ def phase_vs_frequency(resonator, axes, normalize=False, num_model_points=DEFAUL
     return mmr
 
 
-def real_and_imaginary(resonator, axes, normalize=False, num_model_points=DEFAULT_NUM_MODEL_POINTS, equal_aspect=True,
+def real_and_imaginary(resonator, axes, normalize=False, num_model_points=default_num_model_points, equal_aspect=True,
                        label_axes=True, measurement_settings=None, model_settings=None, resonance_settings=None):
     """
     Plot imaginary parts versus real parts on the given axis for the data, best-fit model, and model at the best-fit
@@ -198,22 +210,24 @@ def real_and_imaginary(resonator, axes, normalize=False, num_model_points=DEFAUL
     return mmr
 
 
-def triptych(resonator, figure=None, three_axes=None, normalize=False, num_model_points=DEFAULT_NUM_MODEL_POINTS,
+def triptych(resonator, figure=None, three_axes=None, normalize=False, num_model_points=default_num_model_points,
              frequency_scale=1, three_ticks=True, decibels=True, degrees=True, equal_aspect=True, label_axes=True,
              figure_settings=None, gridspec_settings=None, measurement_settings=None, model_settings=None,
              resonance_settings=None):
+    figure_kwds = triptych_figure_defaults.copy()
+    if figure_settings is not None:
+        figure_kwds.update(figure_settings)
+    if figure is None:
+        figure = plt.figure(**figure_kwds)
     if three_axes is None:
         gridspec_kwds = triptych_gridspec_defaults.copy()
         if gridspec_settings is not None:
             gridspec_kwds.update(gridspec_settings)
-        figure_kwds = triptych_figure_defaults.copy()
-        if figure_settings is not None:
-            figure_kwds.update(figure_settings)
-        figure = plt.figure(**figure_kwds)
         gridspec = plt.GridSpec(2, 2, **gridspec_kwds)
         ax_magnitude = figure.add_subplot(plt.subplot(gridspec.new_subplotspec((0, 0), 1, 1)))
         ax_phase = figure.add_subplot(plt.subplot(gridspec.new_subplotspec((1, 0), 1, 1)))
         ax_complex = figure.add_subplot(plt.subplot(gridspec.new_subplotspec((0, 1), 2, 1)))
+        three_axes = (ax_magnitude, ax_phase, ax_complex)
     else:
         ax_magnitude, ax_phase, ax_complex = three_axes
     magnitude_vs_frequency(resonator=resonator, axes=ax_magnitude, normalize=normalize,
@@ -228,3 +242,31 @@ def triptych(resonator, figure=None, three_axes=None, normalize=False, num_model
                        equal_aspect=equal_aspect, label_axes=label_axes, measurement_settings=measurement_settings,
                        model_settings=model_settings, resonance_settings=resonance_settings)
     return figure, three_axes
+
+
+def photon_number_vs_frequency(resonator, input_power_dBm, axes=None, num_model_points=default_num_model_points,
+                               frequency_scale=1, three_ticks=True, label_axes=True, plot_settings=None,
+                               **subplots_kwds):
+    if axes is None:
+        figure, axes = plt.subplots(**subplots_kwds)
+    else:
+        figure = None
+    if num_model_points is None:
+        frequency = resonator.frequency.copy()
+    else:
+        frequency = np.linspace(resonator.frequency.min(), resonator.frequency.max(), num_model_points)
+    plot_kwds = photon_number_defaults.copy()
+    if plot_settings is not None:
+        plot_kwds.update(plot_settings)
+    photon_number = resonator.photon_number_from_power(input_frequency=frequency, input_power_dBm=input_power_dBm)
+    axes.plot(frequency_scale * frequency, photon_number, **plot_kwds)
+    if three_ticks:
+        axes.set_xticks(frequency_scale * np.array([resonator.frequency.min(), resonator.resonance_frequency,
+                                                    resonator.frequency.max()]))
+    if label_axes:
+        try:
+            axes.set_xlabel('frequency / {}'.format(frequency_scale_to_unit[frequency_scale]))
+        except KeyError:
+            axes.set_xlabel('frequency')
+        axes.set_ylabel("photon number")
+    return figure, axes

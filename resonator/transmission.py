@@ -1,24 +1,42 @@
 """
 This module contains models and fitters for resonators that are operated in transmission.
 
-Fitting resonators in this configuration is more complicated than in the other configurations because the off-resonance
-data goes to 0 instead of 1, while the on-resonance data goes to a value that depends on the quality factors. Thus, one
-additional value must be provided in order to fit. For the moment, the existing fitters use hardcoded background models
-insteading of accepting one as a parameter.
+Fitting resonators in this configuration is more complicated than in the other configurations because the
+off-resonance data goes to 0 instead of 1, while the on-resonance data goes to a value that depends on the losses.
+Because there is no fixed reference point, more information must be provided in order to successfully fit the data. The
+existing models are thus less-developed than those for the other configurations. The current limitations are
+- the existing fitters all use hardcoded background models;
+- the existing models assume that both ports have equal coupling losses;
+- the Kerr nonlinear models are not yet implemented;
+- the example notebooks have not been created yet.
+
+If you need to fit resonators in this configuration, ask!
 """
 from __future__ import absolute_import, division, print_function
 
-import lmfit
 import numpy as np
 
-from . import background, base
+from . import background, base, linear
 
 
-# ToDo: write a transmission class that assumes nothing about the coupling and fits for a single total loss.
-
-class SymmetricTransmission(lmfit.model.Model):
+class AbstractSymmetricTransmission(base.ResonatorModel):
     """
     This class models a resonator operated in transmission. It assumes that two ports have equal coupling losses (or,
+    equivalently, equal coupling quality factors).
+    """
+
+    # This is the peak value of the transmission on resonance when the internal loss is zero.
+    reference_point = 0.5 + 0j
+
+    # ToDo: verify
+    io_coupling_coefficient = 1
+
+
+# Linear models and fitters
+
+class LinearSymmetricTransmission(AbstractSymmetricTransmission):
+    """
+    This class models a linear resonator operated in transmission where the two ports have equal coupling losses (or,
     equivalently, equal coupling quality factors).
 
     The model parameters are the resonance frequency, the internal loss (defined as the inverse of the internal quality
@@ -26,17 +44,18 @@ class SymmetricTransmission(lmfit.model.Model):
     total / loaded / resonator quality factor is
       Q = 1 / (internal_loss + coupling_loss).
     """
-    reference_point = 0.5 + 0j
 
     def __init__(self, *args, **kwargs):
         """
         :param args: arguments passed directly to lmfit.model.Model.__init__().
         :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
+
         def symmetric_transmission(frequency, resonance_frequency, internal_loss, coupling_loss):
             detuning = frequency / resonance_frequency - 1
             return 1 / (1 + (internal_loss + 2j * detuning) / coupling_loss)
-        super(SymmetricTransmission, self).__init__(func=symmetric_transmission, *args, **kwargs)
+
+        super(LinearSymmetricTransmission, self).__init__(func=symmetric_transmission, *args, **kwargs)
 
     def guess(self, data, frequency=None, coupling_loss=None):
         """
@@ -74,7 +93,7 @@ class SymmetricTransmission(lmfit.model.Model):
         return params
 
 
-class CCxSTFitterKnownMagnitude(base.ResonatorFitter):
+class CCxSTFitterKnownMagnitude(linear.LinearResonatorFitter):
     """
     This class fits a composite model that is the product of the ComplexConstant background model and the
     SymmetricTransmission model.
@@ -98,8 +117,8 @@ class CCxSTFitterKnownMagnitude(base.ResonatorFitter):
         """
         self.background_magnitude = background_magnitude
         super(CCxSTFitterKnownMagnitude, self).__init__(frequency=frequency, data=data,
-                                                        foreground_model=SymmetricTransmission(),
-                                                        background_model=background.ComplexConstant(),
+                                                        foreground_model=LinearSymmetricTransmission(),
+                                                        background_model=background.MagnitudePhase(),
                                                         errors=errors, **fit_kwds)
 
     def guess(self, frequency, data):
@@ -111,7 +130,7 @@ class CCxSTFitterKnownMagnitude(base.ResonatorFitter):
         return params
 
 
-class CCxSTFitterKnownCoupling(base.ResonatorFitter):
+class CCxSTFitterKnownCoupling(linear.LinearResonatorFitter):
     """
     This class fits a composite model that is the product of the ComplexConstant background model and the
     SymmetricTransmission model.
@@ -136,8 +155,8 @@ class CCxSTFitterKnownCoupling(base.ResonatorFitter):
         """
         self.known_coupling_loss = coupling_loss
         super(CCxSTFitterKnownCoupling, self).__init__(frequency=frequency, data=data,
-                                                       foreground_model=SymmetricTransmission(),
-                                                       background_model=background.ComplexConstant(),
+                                                       foreground_model=LinearSymmetricTransmission(),
+                                                       background_model=background.MagnitudePhase(),
                                                        errors=errors, **fit_kwds)
 
     def guess(self, frequency, data):
@@ -145,5 +164,4 @@ class CCxSTFitterKnownCoupling(base.ResonatorFitter):
         params.update(self.foreground_model.guess(data=(data /
                                                         self.background_model.eval(params=params, frequency=frequency)),
                                                   frequency=frequency, coupling_loss=self.known_coupling_loss))
-
         return params

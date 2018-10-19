@@ -36,7 +36,7 @@ For example, to fit a resonator in the shunt-coupled (or "hanger") configuration
 from matplotlib import pyplot as plt
 from resonator import shunt, see
 frequency, s21 = get_the_resonator_data()
-r = shunt.ShuntFitter(frequency=frequency, data=s21)
+r = shunt.LinearShuntFitter(frequency=frequency, data=s21)
 print(r.result.fit_report())
 fig, ax = plt.subplots()
 see.real_and_imaginary(resonator=r, axes=ax)
@@ -49,11 +49,11 @@ The fitter object `r` makes the best-fit parameters as well as quality factors, 
 Try `print(dir(r))` to see a list of the available attributes.
 For example, `r.Q_i` is the internal quality factor, and `r.kappa_c_error` is the standard error of the coupling energy decay rate. 
 
-The example code above uses a default background model, called `ComplexConstant`, which takes the background magnitude and phase to be independent of frequency.
+The example code above uses a default background model, called `MagnitudePhase`, which takes the background magnitude and phase to be independent of frequency.
 To fit the same data with a more complex background model that will additionally fit for a time delay, do the following:
 ```python
 from resonator import background
-r = shunt.ShuntFitter(frequency=frequency, data=s21, background_model=background.ConstantMagnitudeConstantDelay())
+r = shunt.LinearShuntFitter(frequency=frequency, data=s21, background_model=background.MagnitudePhaseDelay())
 ```
 (Note that the background model is an **instance**, not a class.)
 All the fits are done in the complex plane, in which the noise from amplifiers should be isotropic. If the complex standard errors of the data points are available, these can be passed to the fitters.
@@ -61,22 +61,24 @@ Since the default assumes equal, isotropic errors at each point, this is importa
 
 ## Internal calculations
 Models for resonators are typically written either in terms of quality factors (e.g. Q_internal, Q_external) or in terms
-of energy loss rates (often denoted by \kappa) that are equal to the resonance angular frequency divided by a quality factor (e.g.
-\kappa_external = \omega_r / Q_external)).
+of energy decay rates (often denoted by kappa) that are equal to the resonance angular frequency divided by a quality factor (e.g.
+kappa_external =\omega_r / Q_external)).
 
 The resonator models in this package use inverse quality factors, which are called "losses" in the code.
-These are more useful than quality factors because energy losses to independent channels simply add.
+These have the expected definition:
+```
+loss_x = 1 / Q_x = P_x / (omega_r * E),
+```
+where P_x is the power lost to channel x, omega_r is the resonance angular frequency, and E is the total energy stored in the resonator.
+For calculations, these are more useful than quality factors because energy losses to independent channels simply add.
 For example, if Q_i is the internal quality factor and Q_c is the coupling (or "external") quality factor, then
 internal_loss = 1 / Q_i,
 coupling_loss = 1 / Q_c,
 and thus
 total_loss = internal_loss + coupling_loss,
 the inverse of the total (or "resonator" or "loaded") quality factor.
-Inverse quality factors are preferred here over the "kappas" because they are dimensionless and are independent of the resonance
-frequency.
-Common physical effects may alter the resonance frequency without altering the energy flow out of the
-resonator, or alter the dissipation without altering the resonance frequency.
+Inverse quality factors are preferred here over the energy decay rates because they are dimensionless.
 
 In order to make this choice transparent to users, the ResonatorFitter class (and thus all of its subclasses) has
-properties that calculate the quality factors and kappas as well as their standard errors.
+properties that calculate the quality factors and energy decay rates as well as their standard errors.
 """
