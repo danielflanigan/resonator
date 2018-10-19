@@ -14,7 +14,8 @@ The module `background.py` contains models for everything except for the resonat
 The module `see.py` contains functions to plot resonator data and fits using `matplotlib`.
 The `examples` folder contains Jupyter notebooks with detailed examples of fitting.
 
-The fitting is done using [lmfit](https://lmfit.github.io/lmfit-py/), which makes 
+The fitting is done using [lmfit](https://lmfit.github.io/lmfit-py/), a fitting package that is built on routines in `scipy.optimize` but allows for more control and flexibility.
+
 ## Install
 Check out the repository from [GitHub](https://github.com/danielflanigan/resonator):
 ```bash
@@ -26,7 +27,7 @@ I recommend installing the package in editable mode:
 ```
 Instead of moving the code to the site-packages directory, this command creates a link there that tells Python where to find the code.
 
-The package requirements are lmfit >= 0.9.3, which depends on numpy, scipy, asteval, six, and uncertainties, and optionally matplotlib for the `see.py` plotting functions.
+The package requirements are lmfit >= 0.9.3, numpy, and matplotlib for the `see.py` plotting functions.
 The code should run in Python 2.7 or 3.6+.
 
 ## Quick start
@@ -62,7 +63,7 @@ Since the default assumes equal, isotropic errors at each point, this is importa
 ## Internal calculations
 Models for resonators are typically written either in terms of quality factors (e.g. Q_internal, Q_external) or in terms
 of energy decay rates (often denoted by kappa) that are equal to the resonance angular frequency divided by a quality factor (e.g.
-kappa_external =\omega_r / Q_external)).
+kappa_external = omega_r / Q_external)).
 
 The resonator models in this package use inverse quality factors, which are called "losses" in the code.
 These have the expected definition:

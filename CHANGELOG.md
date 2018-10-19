@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2] 2018-10-19
+### Changed
+- Version number corrected; minor typos
+
+## [0.3.1] 2018-10-19
+### Changed
+- Example notebooks reflect renaming. 
+
 ## [0.3.0] 2018-10-19
 ### Added
 - This changelog.

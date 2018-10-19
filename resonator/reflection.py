@@ -52,7 +52,7 @@ class LinearReflection(AbstractReflection):
         :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
 
-        def linear_reflection(frequency, resonance_frequency, internal_loss, coupling_loss):
+        def linear_reflection(frequency, resonance_frequency, coupling_loss, internal_loss):
             detuning = frequency / resonance_frequency - 1
             return -1 + (2 / (1 + (internal_loss + 2j * detuning) / coupling_loss))
 

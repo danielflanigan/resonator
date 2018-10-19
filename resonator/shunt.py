@@ -50,7 +50,7 @@ class LinearShunt(AbstractShunt):
         :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
 
-        def linear_shunt(frequency, resonance_frequency, internal_loss, coupling_loss, asymmetry):
+        def linear_shunt(frequency, resonance_frequency, coupling_loss, internal_loss, asymmetry):
             detuning = frequency / resonance_frequency - 1
             return 1 - ((1 + 1j * asymmetry) / (1 + (internal_loss + 2j * detuning) / coupling_loss))
 
