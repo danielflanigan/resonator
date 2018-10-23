@@ -82,4 +82,3 @@ Inverse quality factors are preferred here over the energy decay rates because t
 
 In order to make this choice transparent to users, the ResonatorFitter class (and thus all of its subclasses) has
 properties that calculate the quality factors and energy decay rates as well as their standard errors.
-"""

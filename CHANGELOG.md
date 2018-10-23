@@ -1,12 +1,29 @@
 # Changelog
 
+## [0.4.0] 2018-10-23
+### Added
+- A module `guess.py` to consolidate functions related to initial value guesses.
+
+### Changed
+- The `see.py` plotting functions can now plot the initial fit, and they can now create and return their own figure and axes.
+- Example notebooks updated to demonstrate new plotting abilities, including initial fit for debugging.
+
+### Fixed
+- The Reflection fitters should now work with the backgrounds that include an electrical delay.
+
+### Removed
+- The MeasurementModelResonance object and associated method in `ResonatorFitter`.
+
+
 ## [0.3.2] 2018-10-19
 ### Changed
 - Version number corrected; minor typos
 
+
 ## [0.3.1] 2018-10-19
 ### Changed
 - Example notebooks reflect renaming. 
+
 
 ## [0.3.0] 2018-10-19
 ### Added

@@ -9,17 +9,6 @@ import numpy as np
 from scipy.constants import h, pi
 
 
-# A container for both measured and fit data that is used by the see.py plotting module.
-# The data arrays may either all have the background divided out or not.
-# The measurement_ arrays are the measurement frequency and corresponding response data;
-# The model_ arrays are the model frequency and response data evaluated there;
-# The resonance_ points are the resonance frequency (float) and the model (complex) evaluated there.
-MeasurementModelResonance = namedtuple('MeasurementModelResonance',
-                                       field_names=['measurement_frequency', 'measurement_data',
-                                                    'model_frequency', 'model_data',
-                                                    'resonance_frequency', 'resonance_data'])
-
-
 class ResonatorModel(lmfit.model.Model):
     reference_point = None
 
@@ -207,36 +196,6 @@ class ResonatorFitter(object):
     def foreground_data(self):
         """The measured data divided by the background model calculated at the same frequencies."""
         return self.remove_background(frequency=self.frequency, data=self.data)
-
-    # ToDo: replace with individual methods
-    def measurement_model_resonance(self, normalize=False, num_model_points=None):
-        """
-        Return a MeasurementModelResonance object (see above) containing three pairs of frequency and data values:
-        - arrays containing the measurement frequencies and measured data;
-        - arrays containing various frequencies within the span of the measurement frequencies and the model evaluated
-          at these frequencies;
-        - the model resonance frequency and the model evaluated at this frequency.
-
-        :param normalize: If True, return all data values with the background model removed.
-        :param num_model_points: The number of frequencies to use in evaluating the model between the minimum and
-          maximum measurement frequencies; if None (default), evaluate the model at the measurement frequencies.
-        :return: MeasurementModelResonance containing frequency and data arrays.
-        """
-        measurement_frequency = self.frequency.copy()
-        measurement_data = self.data.copy()
-        if num_model_points is None:
-            model_frequency = self.frequency.copy()
-        else:
-            model_frequency = np.linspace(measurement_frequency.min(), measurement_frequency.max(), num_model_points)
-        model_data = self.model.eval(params=self.result.params, frequency=model_frequency)
-        resonance_data = self.model.eval(params=self.result.params, frequency=self.resonance_frequency)
-        if normalize:
-            measurement_data = self.remove_background(frequency=measurement_frequency, data=measurement_data)
-            model_data = self.remove_background(frequency=model_frequency, data=model_data)
-            resonance_data = self.remove_background(frequency=self.resonance_frequency, data=resonance_data)
-        return MeasurementModelResonance(measurement_frequency, measurement_data,
-                                         model_frequency, model_data,
-                                         self.resonance_frequency, resonance_data)
 
     def invert(self, scattering_data):
         """
