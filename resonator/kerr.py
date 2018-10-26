@@ -10,7 +10,7 @@ from . import base
 
 def kerr_detuning_shift(detuning, coupling_loss, internal_loss, kerr_input, io_coupling_coefficient, choose):
     """
-    Return one real root of the cubic polynomial
+    Return one chosen real root of the cubic polynomial
     0 = a y^3 + b y^2 + c y + d
       = y^3 - 2 x y^2 + [(loss_i + loss_c)^2 / 4 + x^2] y - g loss_c \chi,
     where the variables have the following meanings:
@@ -23,26 +23,40 @@ def kerr_detuning_shift(detuning, coupling_loss, internal_loss, kerr_input, io_c
       \chi = K X_{in} / \omega_r^2,
     where the input photon rate X_{in} means the rate (in s^{-1}) at which photons arrive from the input port,
     typically numbered port 1; K is the Kerr coefficient; and, \omega_r = 2 \pi f_r the resonance angular frequency.
-    The input power Pin = \hbar \omega Xin, where omega is the signal angular frequency. The independent variable is
-      y = K n / omega_r,
+    The input power is
+      P_{in} = \hbar \omega X_{in},
+    where \omega is the signal angular frequency. The independent variable is
+      y = K n / \omega_r,
     where n = <a^\dag a> is the average photon number in the resonator. This quantity y is the detuning shift
-    (dimensionless) that is caused by the Kerr nonlinearity. Note that it can be either positive or negative.
+    (dimensionless) that is caused by the Kerr nonlinearity and it has the same sign as the Kerr coefficient.
 
     This cubic equation can be derived by considering a resonator with hamiltonian
       H = \hbar \omega_r a^\dag a + (\hbar K / 2) a^\dag a^\dag a a,
     where a (a^\dag) is the annihilation (creation) operator for photons in the resonator. The cubic equation is
-    exactly equivalent to Equation 37 of B. Yurke and E. Buks Journal of Lightwave Technology 24. 5054 (2006)
+    exactly equivalent to Equation 37 of B. Yurke and E. Buks Journal of Lightwave Technology 24, 5054 (2006)
     with the nonlinear loss term \gamma_3 = 0. Without a priori knowledge of either the Kerr coefficient or the
     input power, the only way to avoid degeneracy between the parameters is to use the Kerr detuning, instead of
     the photon number, as the independent variable.
 
-    Discuss recommended values of the choose function here.
+    The `choose` function selects one real root when there are multiple real roots that correspond to multiple stable
+    photon number states in the resonator. The recommended value of this function is `np.max` when fitting data taken
+    with a VNA that sweeps the frequency in the positive direction, as is typically done. If the frequency is swept in
+    the negative direction, the recommended value is `np.min`. The reason for this is as follows. When the Kerr
+    coefficient is positive, the low-frequency value of the photon number is continuously connected to the branch in the
+    bifurcation region with higher photon number. The resonator may be expected to stay in this branch through the
+    bifurcation region. In this case, the Kerr detuning shift is also positive, and thus `np.max` selects this branch.
+    When the Kerr coefficient is negative, the low-frequency value of the photon number is continuously connected to the
+    branch with lower photon number. In this case, the Kerr detuning shift is negative, and thus `np.max` again selects
+    this branch since it corresponds to a less negative value of the shift. For frequency sweeps in the negative
+    direction, the above arguments are reversed and `np.min` is the recommended value. Note that the resonator is not
+    guaranteed to stay in one of the bistable states, and it is recommended to collect time-ordered data acquired with
+    a large bandwidth in order to detect jumps between the states.
 
-    :param detuning: a 1D array[float] or single float,
-    :param coupling_loss: a single value of the inverse coupling quality factor.
-    :param internal_loss: a single value of the inverse internal quality factor.
-    :param kerr_input: a single value of the input photon rate KXin described above.
-    :param io_coupling_coefficient: a single value of the parameter g defined above.
+    :param detuning: a 1D array[float] or single float; the fractional frequency detuning
+    :param coupling_loss: a single float; the inverse coupling quality factor.
+    :param internal_loss: a single float; the inverse internal quality factor.
+    :param kerr_input: a 1D array[float] or single float; the rescaled input photon rate \chi described above.
+    :param io_coupling_coefficient: a single float; the parameter g defined above.
     :param choose: a function used to choose which root to return when the cubic has multiple roots; it is called as
       choose(np.vstack((array_of_roots_0, ... , array_of_roots_n)), axis=0), with either two or three arrays; see above
       for recommended functions.
@@ -137,7 +151,7 @@ class KerrFitter(base.ResonatorFitter):
         """
         :param choose: a numpy ufunc that chooses a number to return given multiple roots; see `kerr_detuning_shift`;
           this is baked into the model function when the model object is created, so if you want to compare the results
-          of using another choose function, create a new fitter object.
+          of using another choose function, create a new fitter.
         """
         self._choose = choose  # Modifying this will lead to inconsistent results
         super(KerrFitter, self).__init__(frequency=frequency, data=data, foreground_model=foreground_model,

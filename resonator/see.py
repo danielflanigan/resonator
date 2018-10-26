@@ -179,9 +179,9 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
         if best_fit_settings is not None:
             best_fit_kwds.update(best_fit_settings)
         if normalize:
-            best_fit_data = resonator.foreground_model_values(frequency=model_frequency)
+            best_fit_data = resonator.evaluate_fit_foreground(frequency=model_frequency)
         else:
-            best_fit_data = resonator.model_values(frequency=model_frequency)
+            best_fit_data = resonator.evaluate_fit(frequency=model_frequency)
         axes.plot(frequency_scale * model_frequency, scaler(best_fit_data), **best_fit_kwds)
         if plot_resonance:
             best_fit_resonance_kwds = best_fit_defaults.copy()
@@ -189,9 +189,9 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
             if resonance_settings is not None:
                 best_fit_resonance_kwds.update(resonance_settings)
             if normalize:
-                best_fit_resonance = resonator.foreground_model_values(frequency=resonator.resonance_frequency)
+                best_fit_resonance = resonator.evaluate_fit_foreground(frequency=resonator.resonance_frequency)
             else:
-                best_fit_resonance = resonator.model_values(frequency=resonator.resonance_frequency)
+                best_fit_resonance = resonator.evaluate_fit(frequency=resonator.resonance_frequency)
             axes.plot(frequency_scale * resonator.resonance_frequency, scaler(best_fit_resonance),
                       **best_fit_resonance_kwds)
     if plot_initial_fit:
@@ -199,9 +199,9 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
         if initial_fit_settings is not None:
             initial_fit_kwds.update(initial_fit_settings)
         if normalize:
-            initial_fit_data = resonator.initial_foreground_model_values(frequency=model_frequency)
+            initial_fit_data = resonator.evaluate_initial_foreground(frequency=model_frequency)
         else:
-            initial_fit_data = resonator.initial_model_values(frequency=model_frequency)
+            initial_fit_data = resonator.evaluate_initial(frequency=model_frequency)
         axes.plot(frequency_scale * model_frequency, scaler(initial_fit_data), **initial_fit_kwds)
         if plot_resonance:
             initial_fit_resonance_kwds = initial_fit_defaults.copy()
@@ -209,9 +209,9 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
             if resonance_settings is not None:
                 initial_fit_resonance_kwds.update(resonance_settings)
             if normalize:
-                initial_fit_resonance = resonator.initial_foreground_model_values(frequency=resonator.resonance_frequency)
+                initial_fit_resonance = resonator.evaluate_initial_foreground(frequency=resonator.resonance_frequency)
             else:
-                initial_fit_resonance = resonator.initial_model_values(frequency=resonator.resonance_frequency)
+                initial_fit_resonance = resonator.evaluate_initial(frequency=resonator.resonance_frequency)
             axes.plot(frequency_scale * resonator.resonance_frequency, scaler(initial_fit_resonance),
                       **initial_fit_resonance_kwds)
     if three_ticks:
@@ -280,9 +280,9 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
         if best_fit_settings is not None:
             best_fit_kwds.update(best_fit_settings)
         if normalize:
-            best_fit_data = resonator.foreground_model_values(frequency=model_frequency)
+            best_fit_data = resonator.evaluate_fit_foreground(frequency=model_frequency)
         else:
-            best_fit_data = resonator.model_values(frequency=model_frequency)
+            best_fit_data = resonator.evaluate_fit(frequency=model_frequency)
         axes.plot(best_fit_data.real, best_fit_data.imag, **best_fit_kwds)
         if plot_resonance:
             best_fit_resonance_kwds = best_fit_defaults.copy()
@@ -290,18 +290,18 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
             if resonance_settings is not None:
                 best_fit_resonance_kwds.update(resonance_settings)
             if normalize:
-                best_fit_resonance = resonator.foreground_model_values(frequency=resonator.resonance_frequency)
+                best_fit_resonance = resonator.evaluate_fit_foreground(frequency=resonator.resonance_frequency)
             else:
-                best_fit_resonance = resonator.model_values(frequency=resonator.resonance_frequency)
+                best_fit_resonance = resonator.evaluate_fit(frequency=resonator.resonance_frequency)
             axes.plot(best_fit_resonance.real, best_fit_resonance.imag, **best_fit_resonance_kwds)
     if plot_initial_fit:
         initial_fit_kwds = initial_fit_defaults.copy()
         if initial_fit_settings is not None:
             initial_fit_kwds.update(initial_fit_settings)
         if normalize:
-            initial_fit_data = resonator.initial_foreground_model_values(frequency=model_frequency)
+            initial_fit_data = resonator.evaluate_initial_foreground(frequency=model_frequency)
         else:
-            initial_fit_data = resonator.initial_model_values(frequency=model_frequency)
+            initial_fit_data = resonator.evaluate_initial(frequency=model_frequency)
         axes.plot(initial_fit_data.real, initial_fit_data.imag, **initial_fit_kwds)
         if plot_resonance:
             initial_fit_resonance_kwds = initial_fit_defaults.copy()
@@ -309,10 +309,10 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
             if resonance_settings is not None:
                 initial_fit_resonance_kwds.update(resonance_settings)
             if normalize:
-                initial_fit_resonance = resonator.initial_foreground_model_values(
+                initial_fit_resonance = resonator.evaluate_initial_foreground(
                     frequency=resonator.resonance_frequency)
             else:
-                initial_fit_resonance = resonator.initial_model_values(frequency=resonator.resonance_frequency)
+                initial_fit_resonance = resonator.evaluate_initial(frequency=resonator.resonance_frequency)
             axes.plot(initial_fit_resonance.real, initial_fit_resonance.imag, **initial_fit_resonance_kwds)
     if equal_aspect:
         axes.set_aspect('equal')
