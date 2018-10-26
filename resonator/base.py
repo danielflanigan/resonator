@@ -134,8 +134,8 @@ class ResonatorFitter(object):
         """
         Fit the object's model to its data, overwriting the existing result.
 
-        :param params: a lmfit.parameter.Parameters object containing Parameters that will overwrite the parameters obtained from
-          self.guess(), which uses the guessing functions of first the background and then the foreground.
+        :param params: a lmfit.parameter.Parameters object containing Parameters that will overwrite the parameters
+          obtained from self.guess(), which uses the guessing functions of first the background and then the foreground.
         :param fit_kwds: a dict of keywords passed directly to lmfit.model.Model.fit().
         :return: None
         """
@@ -145,19 +145,20 @@ class ResonatorFitter(object):
         self.result = self.model.fit(frequency=self.frequency, data=self.data, weights=self.weights,
                                      params=initial_params, **fit_kwds)
 
-    def model_values(self, frequency=None, params=None):
+    def model_values(self, frequency=None):
         """
-        Return the model (background * foreground) evaluated at the given frequencies with the given parameters.
+        Return the model (background * foreground) evaluated at the given frequencies with the best-fit parameters.
+
+        To evaluate the model at any frequency with any parameters, do
+        r.model.eval(frequency=frequency, params=params)
+        where params is a lmfit.parameter.Parameters object.
 
         :param frequency: float or array of floats; the default is to use the frequencies corresponding to the data.
-        :param params: lmfit.parameter.Parameters object; the default is to use the current best-fit parameters.
         :return: array[complex]
         """
-        if params is None:
-            params = self.result.params
         if frequency is None:
             frequency = self.frequency
-        return self.model.eval(frequency=frequency, params=params)
+        return self.model.eval(params=self.result.params, frequency=frequency)
 
     def initial_model_values(self, frequency=None):
         """
@@ -168,7 +169,29 @@ class ResonatorFitter(object):
         """
         if frequency is None:
             frequency = self.frequency
-        return self.model.eval(params=self.result.initial_params, frequency=frequency)
+        return self.model.eval(params=self.result.init_params, frequency=frequency)
+
+    def foreground_model_values(self, frequency=None):
+        """
+        Return the foreground model evaluated at the given frequencies with the best-fit parameters.
+
+        :param frequency: float or array of floats; the default is to use the frequencies corresponding to the data.
+        :return: array[complex]
+        """
+        if frequency is None:
+            frequency = self.frequency
+        return self.foreground_model.eval(frequency=frequency, params=self.result.params)
+
+    def initial_foreground_model_values(self, frequency=None):
+        """
+        Return the foreground model evaluated at the given frequencies with the initial parameters.
+
+        :param frequency: float or array of floats; the default is to use the frequencies corresponding to the data.
+        :return: array[complex]
+        """
+        if frequency is None:
+            frequency = self.frequency
+        return self.foreground_model.eval(frequency=frequency, params=self.result.init_params)
 
     def remove_background(self, frequency, data):
         """
@@ -182,9 +205,6 @@ class ResonatorFitter(object):
 
         When used to normalize continuous-wave data taken at a single frequency, the result should be a cloud of points
         that lie on the normalized resonance circle.
-
-        If this method is called with The returned data should produce a circle somewhere in the complex plane. For nonlinear resonators, part of the
-        circle may be missing.
 
         :param frequency: float or array of floats representing frequencies corresponding to the given data.
         :param data: complex or array of complex scattering data to be normalized.

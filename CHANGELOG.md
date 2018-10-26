@@ -1,5 +1,8 @@
 # Changelog
 
+## [unreleased]
+### Changed
+
 ## [0.4.0] 2018-10-23
 ### Added
 - A module `guess.py` to consolidate functions related to initial value guesses.
