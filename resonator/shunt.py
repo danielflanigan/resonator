@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
-from . import background, base, linear, kerr
+from . import background, base, guess, linear, kerr
 
 
 class AbstractShunt(base.ResonatorModel):
@@ -16,25 +16,6 @@ class AbstractShunt(base.ResonatorModel):
 
     # See kerr.kerr_detuning_shift
     io_coupling_coefficient = 1 / 2
-
-    @staticmethod
-    def guess_smooth(frequency, data):
-        # ToDo: use the lowest point of the smoothed data, being careful of edges
-        resonance_frequency = frequency[np.argmin(np.abs(data))]
-        width = frequency.size // 10
-        gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
-        gaussian /= np.sum(gaussian)
-        smoothed = np.convolve(gaussian, np.abs(data), mode='same')
-        derivative = np.convolve(np.array([1, -1]), smoothed, mode='same')
-        # ToDo: investigate how well this is actually working -- for clean data it should calculate the right linewidth
-        # Exclude the edges, which are affected by zero padding.
-        linewidth = (frequency[np.argmax(derivative[width:-width])] -
-                     frequency[np.argmin(derivative[width:-width])])
-        internal_plus_coupling = linewidth / resonance_frequency
-        internal_over_coupling = 1 / (1 / np.min(np.abs(data)) - 1)
-        coupling_loss = internal_plus_coupling / (1 + internal_over_coupling)
-        internal_loss = internal_plus_coupling * internal_over_coupling / (1 + internal_over_coupling)
-        return resonance_frequency, coupling_loss, internal_loss
 
 
 # Linear models and fitters
@@ -57,7 +38,7 @@ class LinearShunt(AbstractShunt):
         super(LinearShunt, self).__init__(func=linear_shunt, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
-        resonance_frequency, coupling_loss, internal_loss = self.guess_smooth(frequency=frequency, data=data)
+        resonance_frequency, coupling_loss, internal_loss = guess.guess_smooth(frequency=frequency, data=data)
         params = self.make_params()
         params['resonance_frequency'].set(value=resonance_frequency, min=frequency.min(), max=frequency.max())
         params['coupling_loss'].set(value=coupling_loss, min=1e-12, max=1)

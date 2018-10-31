@@ -6,6 +6,17 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 
+def smooth(data, fraction=0.05, flatten_edges=True):
+    width = int(fraction * data.size)
+    gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
+    gaussian /= np.sum(gaussian)
+    smoothed = np.convolve(gaussian, data, mode='same')
+    if flatten_edges:
+        smoothed[:width] = smoothed[width]
+        smoothed[-width:] = smoothed[-(width + 1)]
+    return smoothed
+
+
 def distances(data, pad_ends=True):
     """
     Return an array of the same size as the given data containing the sum of the nearest-neighbor distances.
@@ -45,3 +56,15 @@ def polyfit_phase_delay(frequency, data):
 def polyfit_magnitude_slope_offset(frequency, data):
     slope, offset = np.polyfit(frequency, np.abs(data), 1)
     return slope, offset
+
+
+def guess_smooth(frequency, data):
+    smooth_data = smooth(data)
+    resonance_frequency = np.median(frequency[largest(distances(smooth_data), fraction=0.1)])
+    resonance_index = np.argmin(np.abs(frequency - resonance_frequency))
+    linewidth = abs(frequency[np.argmin(smooth_data.imag)] - frequency[np.argmax(smooth_data.imag)])
+    internal_plus_coupling = linewidth / resonance_frequency
+    internal_over_coupling = 2 / (np.abs(smooth_data[resonance_index]) + 1) - 1
+    coupling_loss = internal_plus_coupling / (1 + internal_over_coupling)
+    internal_loss = internal_plus_coupling / (1 + 1 / internal_over_coupling)
+    return resonance_frequency, coupling_loss, internal_loss

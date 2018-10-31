@@ -45,10 +45,10 @@ see.real_and_imaginary(resonator=r, axes=ax)
 where `frequency` is a numpy array of frequencies corresponding to the complex `s21` data array.
 The scattering parameter models are parameterized in terms of resonator **inverse quality factors**, which are called *losses* in the code.
 Thus, the fit report above will show parameters called `internal_loss` and `coupling_loss`, which are the inverses of the corresponding quality factors. 
-See [below](#Internal calculations) for discussion of this choice.
+See below for discussion of this choice.
 The fitter object `r` makes the best-fit parameters as well as quality factors, energy decay rates, and the standard errors of all of these available for attribute access.
 Try `print(dir(r))` to see a list of the available attributes.
-For example, `r.Q_i` is the internal quality factor, and `r.kappa_c_error` is the standard error of the coupling energy decay rate. 
+For example, `r.Q_i` is the internal quality factor, and `r.coupling_energy_decay_rate_error` is the standard error of the coupling energy decay rate. 
 
 The example code above uses a default background model, called `MagnitudePhase`, which takes the background magnitude and phase to be independent of frequency.
 To fit the same data with a more complex background model that will additionally fit for a time delay, do the following:
@@ -62,7 +62,7 @@ Since the default assumes equal, isotropic errors at each point, this is importa
 
 ## Internal calculations
 Models for resonators are typically written either in terms of quality factors (e.g. Q_internal, Q_external) or in terms
-of energy decay rates (often denoted by kappa) that are equal to the resonance angular frequency divided by a quality factor (e.g.
+of energy decay rates that are equal to the resonance angular frequency divided by a quality factor (e.g.
 kappa_external = omega_r / Q_external)).
 
 The resonator models in this package use inverse quality factors, which are called "losses" in the code.

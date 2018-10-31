@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
-from . import background, base, linear, kerr
+from . import background, base, guess, linear, kerr
 
 
 class AbstractReflection(base.ResonatorModel):
@@ -18,25 +18,6 @@ class AbstractReflection(base.ResonatorModel):
 
     # See kerr.kerr_detuning_shift
     io_coupling_coefficient = 1
-
-
-    @staticmethod
-    def guess_smooth(frequency, data):
-        width = frequency.size // 10
-        gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
-        gaussian /= np.sum(gaussian)
-        smoothed = np.convolve(gaussian, data, mode='same')  # This array has the same number of points as the data
-        # The edges are corrupted by zero-padding, so set them equal to non-corrupted points
-        smoothed[:width] = smoothed[width]
-        smoothed[-width:] = smoothed[-(width + 1)]
-        resonance_index = np.argmax(smoothed.real)
-        resonance_frequency = frequency[resonance_index]
-        linewidth = frequency[np.argmin(smoothed.imag)] - frequency[np.argmax(smoothed.imag)]
-        internal_plus_coupling = linewidth / resonance_frequency
-        internal_over_coupling = 2 / (np.abs(smoothed[resonance_index]) + 1) - 1
-        coupling_loss = internal_plus_coupling / (1 + internal_over_coupling)
-        internal_loss = internal_plus_coupling / (1 + 1 / internal_over_coupling)
-        return resonance_frequency, coupling_loss, internal_loss
 
 
 # Linear models and fitters
@@ -59,7 +40,7 @@ class LinearReflection(AbstractReflection):
         super(LinearReflection, self).__init__(func=linear_reflection, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
-        resonance_frequency, coupling_loss, internal_loss = self.guess_smooth(frequency=frequency, data=data)
+        resonance_frequency, coupling_loss, internal_loss = guess.guess_smooth(frequency=frequency, data=data)
         params = self.make_params()
         params['resonance_frequency'].set(value=resonance_frequency, min=frequency.min(), max=frequency.max())
         params['coupling_loss'].set(value=coupling_loss, min=1e-12, max=1)
@@ -124,7 +105,7 @@ class KerrReflection(AbstractReflection):
         super(KerrReflection, self).__init__(func=kerr_reflection, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
-        resonance_frequency, coupling_loss, internal_loss = self.guess_smooth(frequency=frequency, data=data)
+        resonance_frequency, coupling_loss, internal_loss = guess.guess_smooth(frequency=frequency, data=data)
         params = self.make_params()
         params['resonance_frequency'].set(value=resonance_frequency, min=frequency.min(), max=frequency.max())
         params['coupling_loss'].set(value=coupling_loss, min=1e-12, max=1)

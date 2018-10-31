@@ -1,7 +1,13 @@
 # Changelog
 
-## [unreleased]
+## [0.4.1] 2018-10-31
+### Added
+- methods in `base.ResonatorFitter` to evaluate the composite model and the background and foreground models.
+
 ### Changed
+- Renamed some options in `see.py` for consistency.
+- Re-organized and upgraded guessing functions.
+
 
 ## [0.4.0] 2018-10-23
 ### Added

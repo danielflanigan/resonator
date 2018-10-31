@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
-from . import background, base, linear
+from . import background, base, guess, linear
 
 
 class AbstractSymmetricTransmission(base.ResonatorModel):
@@ -57,6 +57,7 @@ class LinearSymmetricTransmission(AbstractSymmetricTransmission):
 
         super(LinearSymmetricTransmission, self).__init__(func=symmetric_transmission, *args, **kwargs)
 
+    #ToDo: implement and test guess.guess_smooth
     def guess(self, data, frequency=None, coupling_loss=None):
         """
         Return a lmfit.Parameters object containing reasonable initial values generated from the given data.
@@ -67,11 +68,7 @@ class LinearSymmetricTransmission(AbstractSymmetricTransmission):
         :return: lmfit.Parameters
         """
         params = self.make_params()
-        data_magnitude = np.abs(data)
-        width = frequency.size // 10
-        gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
-        gaussian /= np.sum(gaussian)
-        smoothed_magnitude = np.convolve(gaussian, data_magnitude, mode='same')
+        smoothed_magnitude = guess.smooth(np.abs(data))
         peak_index = np.argmax(smoothed_magnitude)
         resonance_frequency_guess = frequency[peak_index]  # guess that the resonance is the highest point
         params['resonance_frequency'].set(value=resonance_frequency_guess, min=frequency.min(), max=frequency.max())

@@ -13,24 +13,24 @@ import numpy as np
 
 default_num_model_points = 10000
 
-measurement_defaults = {'linestyle': 'none',
-                        'marker': '.',
-                        'markersize': 2,
-                        'color': 'gray',
-                        'alpha': 1,
-                        'label': 'data'}
+data_defaults = {'linestyle': 'none',
+                 'marker': '.',
+                 'markersize': 2,
+                 'color': 'gray',
+                 'alpha': 1,
+                 'label': 'data'}
 
-best_fit_defaults = {'linestyle': '-',
-                     'linewidth': 0.3,
-                     'color': color_cycle[0],
-                     'alpha': 1,
-                     'label': 'best fit'}
+fit_defaults = {'linestyle': '-',
+                'linewidth': 0.3,
+                'color': color_cycle[0],
+                'alpha': 1,
+                'label': 'best fit'}
 
-initial_fit_defaults = {'linestyle': '--',
-                        'linewidth': 0.3,
-                        'color': color_cycle[1],
-                        'alpha': 1,
-                        'label': 'initial fit'}
+initial_defaults = {'linestyle': '--',
+                    'linewidth': 0.3,
+                    'color': color_cycle[1],
+                    'alpha': 1,
+                    'label': 'initial fit'}
 
 resonance_defaults = {'linestyle': 'none',
                       'marker': '.',
@@ -56,10 +56,9 @@ frequency_scale_to_unit = {1: 'Hz',
 
 
 def magnitude_vs_frequency(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
-                           frequency_scale=1, three_ticks=True, decibels=True, label_axes=True,
-                           plot_measurement=True, plot_best_fit=True, plot_initial_fit=False, plot_resonance=True,
-                           measurement_settings=None, best_fit_settings=None, initial_fit_settings=None,
-                           resonance_settings=None, **subplots_kwds):
+                           frequency_scale=1, three_ticks=True, decibels=True, label_axes=True, plot_data=True,
+                           plot_fit=True, plot_initial=False, plot_resonance=True, measurement_settings=None,
+                           fit_settings=None, initial_settings=None, resonance_settings=None, **subplots_kwds):
     """
     On the given axis, plot magnitude versus frequency of any or all of the following: the measurement data, the
     best-fit model, and the initial-fit model.
@@ -76,19 +75,21 @@ def magnitude_vs_frequency(resonator, axes=None, normalize=False, num_model_poin
       resonance frequency, and maximum frequency.
     :param decibels: if True, plot the magnitude in dB instead of dimensionless scattering parameter units, i.e. V / V.
     :param label_axes: if True, give the axes reasonable labels; see also `frequency_scale`.
-    :param plot_measurement: if True, plot the measured data.
-    :param plot_best_fit: if True, plot the best-fit model.
-    :param plot_initial_fit: if True, plot the initial-fit model.
+    :param plot_data: if True, plot the measured data.
+    :param plot_fit: if True, plot the best-fit model.
+    :param plot_initial: if True, plot the initial-fit model.
     :param plot_resonance: if True, plot the best-fit and/or initial-fit model data at the corresponding resonance
       frequency.
     :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
-      `measurement_defaults` in this module.
-    :param best_fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
-    `best_fit_defaults` in this module.
-    :param initial_fit_settings: a dict of pyplot.plot keywords used to plot the initial-fit modle values; see
-      `initial_fit_defaults` in this module.
+      `data_defaults` in this module.
+    :param fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
+    `fit_defaults` in this module.
+    :param initial_settings: a dict of pyplot.plot keywords used to plot the initial-fit model values; see
+      `initial_defaults` in this module.
     :param resonance_settings: a dict of pyplot.plot keywords used to plot the best-fit and/or initial-fit values at the
       corresponding resonance frequency(ies); see `resonance_defaults` in this module.
+    :param subplots_kwds: keywords passed directly to `pyplot.subplots` to create a new figure and axes; ignored if
+      `axes` is not None.
     :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
     """
     if decibels:
@@ -98,16 +99,14 @@ def magnitude_vs_frequency(resonator, axes=None, normalize=False, num_model_poin
         scaler = lambda data: np.abs(data)
         vertical_label = 'magnitude'
     return _plot_vs_frequency(resonator, scaler, vertical_label, axes, normalize, num_model_points, frequency_scale,
-                              three_ticks, label_axes, plot_measurement, plot_best_fit, plot_initial_fit,
-                              plot_resonance, measurement_settings, best_fit_settings, initial_fit_settings,
-                              resonance_settings, **subplots_kwds)
+                              three_ticks, label_axes, plot_data, plot_fit, plot_initial, plot_resonance,
+                              measurement_settings, fit_settings, initial_settings, resonance_settings, **subplots_kwds)
 
 
 def phase_vs_frequency(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
-                       frequency_scale=1, three_ticks=True, degrees=True, label_axes=True,
-                       plot_measurement=True, plot_best_fit=True, plot_initial_fit=False, plot_resonance=True,
-                       measurement_settings=None, best_fit_settings=None, initial_fit_settings=None,
-                       resonance_settings=None, **subplots_kwds):
+                       frequency_scale=1, three_ticks=True, degrees=True, label_axes=True, plot_data=True,
+                       plot_fit=True, plot_initial=False, plot_resonance=True, measurement_settings=None,
+                       fit_settings=None, initial_settings=None, resonance_settings=None, **subplots_kwds):
     """
     On the given axis, plot phase versus frequency of any or all of the following: the measurement data, the
     best-fit model, and the initial-fit model.
@@ -124,19 +123,21 @@ def phase_vs_frequency(resonator, axes=None, normalize=False, num_model_points=d
       resonance frequency, and maximum frequency.
     :param degrees: if True, plot the phase in degrees instead of radians.
     :param label_axes: if True, give the axes reasonable labels; see also `frequency_scale`.
-    :param plot_measurement: if True, plot the measured data.
-    :param plot_best_fit: if True, plot the best-fit model.
-    :param plot_initial_fit: if True, plot the initial-fit model.
+    :param plot_data: if True, plot the measured data.
+    :param plot_fit: if True, plot the best-fit model.
+    :param plot_initial: if True, plot the initial-fit model.
     :param plot_resonance: if True, plot the best-fit and/or initial-fit model data at the corresponding resonance
       frequency.
     :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
-      `measurement_defaults` in this module.
-    :param best_fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
-    `best_fit_defaults` in this module.
-    :param initial_fit_settings: a dict of pyplot.plot keywords used to plot the initial-fit modle values; see
-      `initial_fit_defaults` in this module.
+      `data_defaults` in this module.
+    :param fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
+    `fit_defaults` in this module.
+    :param initial_settings: a dict of pyplot.plot keywords used to plot the initial-fit model values; see
+      `initial_defaults` in this module.
     :param resonance_settings: a dict of pyplot.plot keywords used to plot the best-fit and/or initial-fit values at the
       corresponding resonance frequency(ies); see `resonance_defaults` in this module.
+    :param subplots_kwds: keywords passed directly to `pyplot.subplots` to create a new figure and axes; ignored if
+      `axes` is not None.
     :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
     """
     if degrees:
@@ -146,74 +147,72 @@ def phase_vs_frequency(resonator, axes=None, normalize=False, num_model_points=d
         scaler = lambda data: np.angle(data)
         vertical_label = 'phase / rad'
     return _plot_vs_frequency(resonator, scaler, vertical_label, axes, normalize, num_model_points, frequency_scale,
-                              three_ticks, label_axes, plot_measurement, plot_best_fit, plot_initial_fit,
-                              plot_resonance, measurement_settings, best_fit_settings, initial_fit_settings,
-                              resonance_settings, **subplots_kwds)
+                              three_ticks, label_axes, plot_data, plot_fit, plot_initial, plot_resonance,
+                              measurement_settings, fit_settings, initial_settings, resonance_settings, **subplots_kwds)
 
 
 def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=False,
                        num_model_points=default_num_model_points, frequency_scale=1, three_ticks=True, label_axes=True,
-                       plot_measurement=True, plot_best_fit=True, plot_initial_fit=False, plot_resonance=True,
-                       measurement_settings=None, best_fit_settings=None, initial_fit_settings=None,
+                       plot_measurement=True, plot_fit=True, plot_initial=False, plot_resonance=True,
+                       data_settings=None, fit_settings=None, initial_settings=None,
                        resonance_settings=None, **subplots_kwds):
     if axes is None:
         figure, axes = plt.subplots(**subplots_kwds)
     else:
         figure = None
     if plot_measurement:
-        measurement_kwds = measurement_defaults.copy()
-        if measurement_settings is not None:
-            measurement_kwds.update(measurement_settings)
+        data_kwds = data_defaults.copy()
+        if data_settings is not None:
+            data_kwds.update(data_settings)
         if normalize:
-            measurement_data = resonator.foreground_data
+            data = resonator.foreground_data
         else:
-            measurement_data = resonator.data
-        axes.plot(frequency_scale * resonator.frequency, scaler(measurement_data), **measurement_kwds)
-    if plot_best_fit or plot_initial_fit:  # Used for both best-fit and initial-fit plots
+            data = resonator.data
+        axes.plot(frequency_scale * resonator.frequency, scaler(data), **data_kwds)
+    if plot_fit or plot_initial:  # Used for both best-fit and initial-fit plots
         if num_model_points is None:
             model_frequency = resonator.frequency
         else:
             model_frequency = np.linspace(resonator.frequency.min(), resonator.frequency.max(), num_model_points)
-    if plot_best_fit:
-        best_fit_kwds = best_fit_defaults.copy()
-        if best_fit_settings is not None:
-            best_fit_kwds.update(best_fit_settings)
+    if plot_fit:
+        fit_kwds = fit_defaults.copy()
+        if fit_settings is not None:
+            fit_kwds.update(fit_settings)
         if normalize:
-            best_fit_data = resonator.evaluate_fit_foreground(frequency=model_frequency)
+            fit = resonator.evaluate_fit_foreground(frequency=model_frequency)
         else:
-            best_fit_data = resonator.evaluate_fit(frequency=model_frequency)
-        axes.plot(frequency_scale * model_frequency, scaler(best_fit_data), **best_fit_kwds)
+            fit = resonator.evaluate_fit(frequency=model_frequency)
+        axes.plot(frequency_scale * model_frequency, scaler(fit), **fit_kwds)
         if plot_resonance:
-            best_fit_resonance_kwds = best_fit_defaults.copy()
-            best_fit_resonance_kwds.update(resonance_defaults)
+            fit_resonance_kwds = fit_defaults.copy()
+            fit_resonance_kwds.update(resonance_defaults)
             if resonance_settings is not None:
-                best_fit_resonance_kwds.update(resonance_settings)
+                fit_resonance_kwds.update(resonance_settings)
             if normalize:
-                best_fit_resonance = resonator.evaluate_fit_foreground(frequency=resonator.resonance_frequency)
+                fit_resonance = resonator.evaluate_fit_foreground(frequency=resonator.resonance_frequency)
             else:
-                best_fit_resonance = resonator.evaluate_fit(frequency=resonator.resonance_frequency)
-            axes.plot(frequency_scale * resonator.resonance_frequency, scaler(best_fit_resonance),
-                      **best_fit_resonance_kwds)
-    if plot_initial_fit:
-        initial_fit_kwds = initial_fit_defaults.copy()
-        if initial_fit_settings is not None:
-            initial_fit_kwds.update(initial_fit_settings)
+                fit_resonance = resonator.evaluate_fit(frequency=resonator.resonance_frequency)
+            axes.plot(frequency_scale * resonator.resonance_frequency, scaler(fit_resonance), **fit_resonance_kwds)
+    if plot_initial:
+        initial_kwds = initial_defaults.copy()
+        if initial_settings is not None:
+            initial_kwds.update(initial_settings)
         if normalize:
-            initial_fit_data = resonator.evaluate_initial_foreground(frequency=model_frequency)
+            initial = resonator.evaluate_initial_foreground(frequency=model_frequency)
         else:
-            initial_fit_data = resonator.evaluate_initial(frequency=model_frequency)
-        axes.plot(frequency_scale * model_frequency, scaler(initial_fit_data), **initial_fit_kwds)
+            initial = resonator.evaluate_initial(frequency=model_frequency)
+        axes.plot(frequency_scale * model_frequency, scaler(initial), **initial_kwds)
         if plot_resonance:
-            initial_fit_resonance_kwds = initial_fit_defaults.copy()
-            initial_fit_resonance_kwds.update(resonance_defaults)
+            initial_resonance_kwds = initial_defaults.copy()
+            initial_resonance_kwds.update(resonance_defaults)
             if resonance_settings is not None:
-                initial_fit_resonance_kwds.update(resonance_settings)
+                initial_resonance_kwds.update(resonance_settings)
             if normalize:
-                initial_fit_resonance = resonator.evaluate_initial_foreground(frequency=resonator.resonance_frequency)
+                initial_resonance = resonator.evaluate_initial_foreground(frequency=resonator.resonance_frequency)
             else:
-                initial_fit_resonance = resonator.evaluate_initial(frequency=resonator.resonance_frequency)
-            axes.plot(frequency_scale * resonator.resonance_frequency, scaler(initial_fit_resonance),
-                      **initial_fit_resonance_kwds)
+                initial_resonance = resonator.evaluate_initial(frequency=resonator.resonance_frequency)
+            axes.plot(frequency_scale * resonator.resonance_frequency, scaler(initial_resonance),
+                      **initial_resonance_kwds)
     if three_ticks:
         axes.set_xticks(frequency_scale * np.array([resonator.frequency.min(), resonator.resonance_frequency,
                                                     resonator.frequency.max()]))
@@ -228,9 +227,9 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
 
 
 def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
-                       equal_aspect=True, label_axes=True, plot_measurement=True, plot_best_fit=True,
-                       plot_initial_fit=False, plot_resonance=True, measurement_settings=None, best_fit_settings=None,
-                       initial_fit_settings=None, resonance_settings=None, **subplots_kwds):
+                       equal_aspect=True, label_axes=True, plot_data=True, plot_fit=True,
+                       plot_initial=False, plot_resonance=True, measurement_settings=None, fit_settings=None,
+                       initial_settings=None, resonance_settings=None, **subplots_kwds):
     """
     Plot imaginary parts versus real parts on the given axis for the data, best-fit model, and model at the best-fit
     resonance frequency; return a structure containing the measurement, model, and resonance values.
@@ -242,78 +241,79 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
     :param num_model_points: the number of points at which to evaluate the model over the measurement frequency range.
     :param equal_aspect: if True, set the axes aspect ratio to 'equal' so that the normalized resonance forms a circle.
     :param label_axes: if True, give the axes reasonable labels.
-    :param plot_measurement: if True, plot the measured data.
-    :param plot_best_fit: if True, plot the best-fit model.
-    :param plot_initial_fit: if True, plot the initial-fit model.
+    :param plot_data: if True, plot the measured data.
+    :param plot_fit: if True, plot the best-fit model.
+    :param plot_initial: if True, plot the initial-fit model.
     :param plot_resonance: if True, plot the best-fit and/or initial-fit model data at the corresponding resonance
       frequency.
     :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
-      `measurement_defaults` in this module.
-    :param best_fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
-    `best_fit_defaults` in this module.
-    :param initial_fit_settings: a dict of pyplot.plot keywords used to plot the initial-fit modle values; see
-      `initial_fit_defaults` in this module.
+      `data_defaults` in this module.
+    :param fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
+    `fit_defaults` in this module.
+    :param initial_settings: a dict of pyplot.plot keywords used to plot the initial-fit model values; see
+      `initial_defaults` in this module.
     :param resonance_settings: a dict of pyplot.plot keywords used to plot the best-fit and/or initial-fit values at the
       corresponding resonance frequency(ies); see `resonance_defaults` in this module.
+    :param subplots_kwds: keywords passed directly to `pyplot.subplots` to create a new figure and axes; ignored if
+      `axes` is not None.
     :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
     """
     if axes is None:
         figure, axes = plt.subplots(**subplots_kwds)
     else:
         figure = None
-    if plot_measurement:
-        measurement_kwds = measurement_defaults.copy()
+    if plot_data:
+        data_kwds = data_defaults.copy()
         if measurement_settings is not None:
-            measurement_kwds.update(measurement_settings)
+            data_kwds.update(measurement_settings)
         if normalize:
-            measurement_data = resonator.foreground_data
+            data = resonator.foreground_data
         else:
-            measurement_data = resonator.data
-        axes.plot(measurement_data.real, measurement_data.imag, **measurement_kwds)
-    if plot_best_fit or plot_initial_fit:  # Used for both best-fit and initial-fit plots
+            data = resonator.data
+        axes.plot(data.real, data.imag, **data_kwds)
+    if plot_fit or plot_initial:  # Used for both best-fit and initial-fit plots
         if num_model_points is None:
             model_frequency = resonator.frequency
         else:
             model_frequency = np.linspace(resonator.frequency.min(), resonator.frequency.max(), num_model_points)
-    if plot_best_fit:
-        best_fit_kwds = best_fit_defaults.copy()
-        if best_fit_settings is not None:
-            best_fit_kwds.update(best_fit_settings)
+    if plot_fit:
+        fit_kwds = fit_defaults.copy()
+        if fit_settings is not None:
+            fit_kwds.update(fit_settings)
         if normalize:
-            best_fit_data = resonator.evaluate_fit_foreground(frequency=model_frequency)
+            fit = resonator.evaluate_fit_foreground(frequency=model_frequency)
         else:
-            best_fit_data = resonator.evaluate_fit(frequency=model_frequency)
-        axes.plot(best_fit_data.real, best_fit_data.imag, **best_fit_kwds)
+            fit = resonator.evaluate_fit(frequency=model_frequency)
+        axes.plot(fit.real, fit.imag, **fit_kwds)
         if plot_resonance:
-            best_fit_resonance_kwds = best_fit_defaults.copy()
-            best_fit_resonance_kwds.update(resonance_defaults)
+            fit_resonance_kwds = fit_defaults.copy()
+            fit_resonance_kwds.update(resonance_defaults)
             if resonance_settings is not None:
-                best_fit_resonance_kwds.update(resonance_settings)
+                fit_resonance_kwds.update(resonance_settings)
             if normalize:
-                best_fit_resonance = resonator.evaluate_fit_foreground(frequency=resonator.resonance_frequency)
+                fit_resonance = resonator.evaluate_fit_foreground(frequency=resonator.resonance_frequency)
             else:
-                best_fit_resonance = resonator.evaluate_fit(frequency=resonator.resonance_frequency)
-            axes.plot(best_fit_resonance.real, best_fit_resonance.imag, **best_fit_resonance_kwds)
-    if plot_initial_fit:
-        initial_fit_kwds = initial_fit_defaults.copy()
-        if initial_fit_settings is not None:
-            initial_fit_kwds.update(initial_fit_settings)
+                fit_resonance = resonator.evaluate_fit(frequency=resonator.resonance_frequency)
+            axes.plot(fit_resonance.real, fit_resonance.imag, **fit_resonance_kwds)
+    if plot_initial:
+        initial_kwds = initial_defaults.copy()
+        if initial_settings is not None:
+            initial_kwds.update(initial_settings)
         if normalize:
-            initial_fit_data = resonator.evaluate_initial_foreground(frequency=model_frequency)
+            initial = resonator.evaluate_initial_foreground(frequency=model_frequency)
         else:
-            initial_fit_data = resonator.evaluate_initial(frequency=model_frequency)
-        axes.plot(initial_fit_data.real, initial_fit_data.imag, **initial_fit_kwds)
+            initial = resonator.evaluate_initial(frequency=model_frequency)
+        axes.plot(initial.real, initial.imag, **initial_kwds)
         if plot_resonance:
-            initial_fit_resonance_kwds = initial_fit_defaults.copy()
-            initial_fit_resonance_kwds.update(resonance_defaults)
+            initial_resonance_kwds = initial_defaults.copy()
+            initial_resonance_kwds.update(resonance_defaults)
             if resonance_settings is not None:
-                initial_fit_resonance_kwds.update(resonance_settings)
+                initial_resonance_kwds.update(resonance_settings)
             if normalize:
-                initial_fit_resonance = resonator.evaluate_initial_foreground(
-                    frequency=resonator.resonance_frequency)
+                initial_resonance = resonator.evaluate_initial_foreground(frequency=resonator.resonance_frequency)
             else:
-                initial_fit_resonance = resonator.evaluate_initial(frequency=resonator.resonance_frequency)
-            axes.plot(initial_fit_resonance.real, initial_fit_resonance.imag, **initial_fit_resonance_kwds)
+                initial_resonance = resonator.evaluate_initial(frequency=resonator.resonance_frequency)
+            axes.plot(initial_resonance.real, initial_resonance.imag, **initial_resonance_kwds)
     if equal_aspect:
         axes.set_aspect('equal')
     if label_axes:
@@ -325,17 +325,17 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
 
 def triptych(resonator, three_axes=None, normalize=False, num_model_points=default_num_model_points,
              frequency_scale=1, three_ticks=True, decibels=True, degrees=True, equal_aspect=True, label_axes=True,
-             figure_settings=None, gridspec_settings=None, plot_measurement=True, plot_best_fit=True,
-             plot_initial_fit=False, plot_resonance=True, measurement_settings=None, best_fit_settings=None,
-             initial_fit_settings=None, resonance_settings=None):
+             figure_settings=None, gridspec_settings=None, plot_data=True, plot_fit=True,
+             plot_initial=False, plot_resonance=True, measurement_settings=None, fit_settings=None,
+             initial_settings=None, resonance_settings=None, **subplots_kwds):
     """
     Plot the resonator data in three ways: magnitude versus frequency, phase versus frequency, and imaginary versus real
     using the plotting functions in this module. See those functions for the meanings of the parameters not given below.
 
     :param three_axes: an iterable of three matplotlib Axes objects that will be used to plot the magnitude, phase, and
     complex data, in that order; if None, create and return a new Figure and three Axes objects.
-    :figure_settings: keywords passed to pyplot.figure; ignored if axes is not None
-    if axes is None, return a new Figure and three Axes objects; otherwise, return None.
+    :param figure_settings: keywords passed to `pyplot.figure`; ignored if axes is not None
+    :return: if axes is None, return a new Figure and three Axes objects; otherwise, return None.
     """
     if three_axes is None:
         figure_kwds = triptych_figure_defaults.copy()
@@ -355,23 +355,20 @@ def triptych(resonator, three_axes=None, normalize=False, num_model_points=defau
         ax_magnitude, ax_phase, ax_complex = three_axes
     magnitude_vs_frequency(resonator=resonator, axes=ax_magnitude, normalize=normalize,
                            num_model_points=num_model_points, frequency_scale=frequency_scale, three_ticks=three_ticks,
-                           decibels=decibels, label_axes=label_axes,
-                           plot_measurement=plot_measurement, plot_best_fit=plot_best_fit,
-                           plot_initial_fit=plot_initial_fit, plot_resonance=plot_resonance,
-                           nmeasurement_settings=measurement_settings, best_fit_settings=best_fit_settings,
-                           initial_fit_settings=initial_fit_settings, resonance_settings=resonance_settings)
+                           decibels=decibels, label_axes=label_axes, plot_data=plot_data, plot_fit=plot_fit,
+                           plot_initial=plot_initial, plot_resonance=plot_resonance,
+                           nmeasurement_settings=measurement_settings, fit_settings=fit_settings,
+                           initial_settings=initial_settings, resonance_settings=resonance_settings, **subplots_kwds)
     phase_vs_frequency(resonator=resonator, axes=ax_phase, normalize=normalize, num_model_points=num_model_points,
                        frequency_scale=frequency_scale, three_ticks=three_ticks, degrees=degrees, label_axes=label_axes,
-                       plot_measurement=plot_measurement, plot_best_fit=plot_best_fit,
-                       plot_initial_fit=plot_initial_fit, plot_resonance=plot_resonance,
-                       nmeasurement_settings=measurement_settings, best_fit_settings=best_fit_settings,
-                       initial_fit_settings=initial_fit_settings, resonance_settings=resonance_settings)
+                       plot_data=plot_data, plot_fit=plot_fit, plot_initial=plot_initial, plot_resonance=plot_resonance,
+                       nmeasurement_settings=measurement_settings, fit_settings=fit_settings,
+                       initial_settings=initial_settings, resonance_settings=resonance_settings, **subplots_kwds)
     real_and_imaginary(resonator=resonator, axes=ax_complex, normalize=normalize, num_model_points=num_model_points,
                        equal_aspect=equal_aspect, label_axes=label_axes,
-                       plot_measurement=plot_measurement, plot_best_fit=plot_best_fit,
-                       plot_initial_fit=plot_initial_fit, plot_resonance=plot_resonance,
-                       nmeasurement_settings=measurement_settings, best_fit_settings=best_fit_settings,
-                       initial_fit_settings=initial_fit_settings, resonance_settings=resonance_settings)
+                       plot_data=plot_data, plot_fit=plot_fit, plot_initial=plot_initial, plot_resonance=plot_resonance,
+                       nmeasurement_settings=measurement_settings, fit_settings=fit_settings,
+                       initial_settings=initial_settings, resonance_settings=resonance_settings, **subplots_kwds)
     if figure is not None:
         return figure, three_axes
 
