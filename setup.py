@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='Resonator',
-      version='0.4.0',
+      version='0.4.1',
       description='Fit and analyze scattering parameter data from resonators',
       author='Daniel Flanigan',
       author_email='daniel.isaiah.flanigan@gmail.com',
