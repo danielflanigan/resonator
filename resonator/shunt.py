@@ -100,7 +100,7 @@ class KerrShunt(AbstractShunt):
         super(KerrShunt, self).__init__(func=kerr_shunt, *args, **kwds)
 
     def guess(self, data=None, frequency=None, **kwds):
-        resonance_frequency, coupling_loss, internal_loss = self.guess_smooth(frequency=frequency, data=data)
+        resonance_frequency, coupling_loss, internal_loss = guess.guess_smooth(frequency=frequency, data=data)
         params = self.make_params()
         params['resonance_frequency'].set(value=resonance_frequency, min=frequency.min(), max=frequency.max())
         params['coupling_loss'].set(value=coupling_loss, min=1e-12, max=1)

@@ -1,8 +1,14 @@
 # Changelog
+## [0.4.2] 2018-11-05
+### Changed
+- Updated example notebooks.
+
+### Fixed
+- Typo in shunt.KerrShuntFitter.
 
 ## [0.4.1] 2018-10-31
 ### Added
-- methods in `base.ResonatorFitter` to evaluate the composite model and the background and foreground models.
+- Methods in `base.ResonatorFitter` to evaluate the composite model and the background and foreground models.
 
 ### Changed
 - Renamed some options in `see.py` for consistency.
