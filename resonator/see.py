@@ -43,6 +43,8 @@ photon_number_defaults = {'linestyle': '-',
                           'color': color_cycle[0],
                           'alpha': 1}
 
+crosshairs_defaults = {'color': 'gray'}
+
 triptych_figure_defaults = {}
 
 triptych_gridspec_defaults = {'hspace': 0.4,
@@ -229,7 +231,7 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
 def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
                        equal_aspect=True, label_axes=True, plot_data=True, plot_fit=True,
                        plot_initial=False, plot_resonance=True, measurement_settings=None, fit_settings=None,
-                       initial_settings=None, resonance_settings=None, **subplots_kwds):
+                       initial_settings=None, resonance_settings=None, crosshairs=True, **subplots_kwds):
     """
     Plot imaginary parts versus real parts on the given axis for the data, best-fit model, and model at the best-fit
     resonance frequency; return a structure containing the measurement, model, and resonance values.
@@ -254,6 +256,7 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
       `initial_defaults` in this module.
     :param resonance_settings: a dict of pyplot.plot keywords used to plot the best-fit and/or initial-fit values at the
       corresponding resonance frequency(ies); see `resonance_defaults` in this module.
+    :param crosshairs: if True, plot horizontal and vertical lines that pass through the origin.
     :param subplots_kwds: keywords passed directly to `pyplot.subplots` to create a new figure and axes; ignored if
       `axes` is not None.
     :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
@@ -262,6 +265,9 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
         figure, axes = plt.subplots(**subplots_kwds)
     else:
         figure = None
+    if crosshairs:
+        axes.axhline(0, **crosshairs_defaults)
+        axes.axvline(0, **crosshairs_defaults)
     if plot_data:
         data_kwds = data_defaults.copy()
         if measurement_settings is not None:
@@ -327,7 +333,7 @@ def triptych(resonator, three_axes=None, normalize=False, num_model_points=defau
              frequency_scale=1, three_ticks=True, decibels=True, degrees=True, equal_aspect=True, label_axes=True,
              figure_settings=None, gridspec_settings=None, plot_data=True, plot_fit=True,
              plot_initial=False, plot_resonance=True, measurement_settings=None, fit_settings=None,
-             initial_settings=None, resonance_settings=None, **subplots_kwds):
+             initial_settings=None, resonance_settings=None, crosshairs=True, **subplots_kwds):
     """
     Plot the resonator data in three ways: magnitude versus frequency, phase versus frequency, and imaginary versus real
     using the plotting functions in this module. See those functions for the meanings of the parameters not given below.
@@ -368,7 +374,8 @@ def triptych(resonator, three_axes=None, normalize=False, num_model_points=defau
                        equal_aspect=equal_aspect, label_axes=label_axes,
                        plot_data=plot_data, plot_fit=plot_fit, plot_initial=plot_initial, plot_resonance=plot_resonance,
                        nmeasurement_settings=measurement_settings, fit_settings=fit_settings,
-                       initial_settings=initial_settings, resonance_settings=resonance_settings, **subplots_kwds)
+                       initial_settings=initial_settings, resonance_settings=resonance_settings, crosshairs=crosshairs,
+                       **subplots_kwds)
     if figure is not None:
         return figure, three_axes
 

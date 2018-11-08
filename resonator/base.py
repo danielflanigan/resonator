@@ -312,7 +312,8 @@ class ResonatorFitter(object):
     @property
     def omega_r_error(self):
         """The standard error of the resonance angular frequency."""
-        return 2 * pi * self.resonance_frequency_error
+        if self.resonance_frequency_error is not None:
+            return 2 * pi * self.resonance_frequency_error
 
     @property
     def total_loss(self):
@@ -325,7 +326,8 @@ class ResonatorFitter(object):
     @property
     def total_loss_error(self):
         """Assume that the errors of the internal loss and coupling loss are independent."""
-        return (self.internal_loss_error ** 2 + self.coupling_loss_error ** 2) ** (1 / 2)
+        if self.internal_loss_error is not None and self.coupling_loss_error is not None:
+            return (self.internal_loss_error ** 2 + self.coupling_loss_error ** 2) ** (1 / 2)
 
     @property
     def coupling_quality_factor(self):
@@ -340,7 +342,8 @@ class ResonatorFitter(object):
     @property
     def coupling_quality_factor_error(self):
         """The standard error of the coupling quality factor."""
-        return self.coupling_loss_error / self.coupling_loss ** 2
+        if self.coupling_loss_error is not None:
+            return self.coupling_loss_error / self.coupling_loss ** 2
 
     @property
     def Q_c_error(self):
@@ -360,7 +363,8 @@ class ResonatorFitter(object):
     @property
     def internal_quality_factor_error(self):
         """The standard error of the internal quality factor."""
-        return self.internal_loss_error / self.internal_loss ** 2
+        if self.internal_loss_error is not None:
+            return self.internal_loss_error / self.internal_loss ** 2
 
     @property
     def Q_i_error(self):
@@ -380,7 +384,8 @@ class ResonatorFitter(object):
     @property
     def total_quality_factor_error(self):
         """The standard error of the total (or resonator, or loaded) quality factor."""
-        return self.total_loss_error / self.total_loss ** 2
+        if self.total_loss_error is not None:
+            return self.total_loss_error / self.total_loss ** 2
 
     @property
     def Q_t_error(self):
@@ -398,8 +403,9 @@ class ResonatorFitter(object):
         The standard error of the coupling energy decay rate, calculated by assuming that the errors of the resonance
         frequency and coupling loss are independent.
         """
-        return self.coupling_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2
-                                                  + (self.coupling_loss_error / self.coupling_loss) ** 2) ** (1 / 2)
+        if self.resonance_frequency_error is not None and self.coupling_loss_error is not None:
+            return self.coupling_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2
+                                                      + (self.coupling_loss_error / self.coupling_loss) ** 2) ** (1 / 2)
 
     @property
     def internal_energy_decay_rate(self):
@@ -412,8 +418,9 @@ class ResonatorFitter(object):
         The standard error of the coupling energy decay rate, calculated by assuming that the errors of the resonance
         frequency and internal loss are independent.
         """
-        return self.internal_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
-                                                  (self.internal_loss_error / self.internal_loss) ** 2) ** (1 / 2)
+        if self.resonance_frequency_error is not None and self.internal_loss_error is not None:
+            return self.internal_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2
+                                                      + (self.internal_loss_error / self.internal_loss) ** 2) ** (1 / 2)
 
     @property
     def total_energy_decay_rate(self):
@@ -426,8 +433,9 @@ class ResonatorFitter(object):
         The total energy decay rate, calculated by assuming that the errors of the resonance frequency, internal loss,
         and coupling loss are independent.
         """
-        return self.total_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2 +
-                                               (self.total_loss_error / self.total_loss) ** 2) ** (1 / 2)
+        if self.resonance_frequency_error is not None and self.total_loss_error is not None:
+            return self.total_energy_decay_rate * ((self.resonance_frequency_error / self.resonance_frequency) ** 2
+                                                   + (self.total_loss_error / self.total_loss) ** 2) ** (1 / 2)
 
     # Photon number
 

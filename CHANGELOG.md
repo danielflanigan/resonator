@@ -1,4 +1,12 @@
 # Changelog
+
+## [0.4.3] 2018-11-08
+### Fixed
+-  Instead of causing an exception, errors on derived values (e.g. quality factors) are None when the parameter errors are None because the fit cannot estimate them. 
+
+### Added
+- `crosshairs` keyword in `see.real_and_imaginary` adds lines through origin.
+ 
 ## [0.4.2] 2018-11-05
 ### Changed
 - Updated example notebooks.
