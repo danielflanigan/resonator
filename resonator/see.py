@@ -38,12 +38,20 @@ resonance_defaults = {'linestyle': 'none',
                       'alpha': 1,
                       'label': 'resonance'}
 
+residuals_defaults = {'linestyle': 'none',
+                      'marker': '.',
+                      'markersize': 2,
+                      'color': color_cycle[0],
+                      'alpha': 1,
+                      'label': 'residuals'}
+
 photon_number_defaults = {'linestyle': '-',
                           'linewidth': 0.3,
                           'color': color_cycle[0],
                           'alpha': 1}
 
-crosshairs_defaults = {'color': 'gray'}
+crosshairs_defaults = {'color': 'gray',
+                       'linestyle': ':'}
 
 triptych_figure_defaults = {}
 
@@ -105,6 +113,36 @@ def magnitude_vs_frequency(resonator, axes=None, normalize=False, num_model_poin
                               measurement_settings, fit_settings, initial_settings, resonance_settings, **subplots_kwds)
 
 
+def residual_magnitude_vs_frequency(resonator, axes=None, frequency_scale=1, three_ticks=True, decibels=False,
+                                    label_axes=True, residuals_settings=None, **subplots_kwds):
+        """
+        Plot the magnitude of the residuals versus frequency; if no Axes is given, return a new Figure and Axes.
+
+        :param resonator: an instance of a fitter.ResonatorFitter subclass.
+        :param axes: a matplotlib Axes instance; if None, create new Figure and Axes objects using
+          `fig, ax = plt.subplots(**subplots_kwds)`, plot using these, and return them.
+        :param frequency_scale: a float by which the plotted frequencies are multiplied; if this is an integer power of
+          10^-3, then automatic horizontal axis label will have the correct units of Hz, kHz, etc.
+        :param three_ticks: if True, the horizontal axis will have exactly three tick marks at the minimum frequency,
+          resonance frequency, and maximum frequency.
+        :param decibels: if True, plot the magnitude in dB instead of in scattering parameter units, i.e. V / V.
+        :param label_axes: if True, give the axes reasonable labels; see also `frequency_scale`.
+        :param residuals_settings: a dict of pyplot.plot keywords used to plot the residuals; see `residuals_defaults`
+          in this module.
+        :param subplots_kwds: keywords passed directly to `pyplot.subplots` to create a new figure and axes; ignored if
+          `axes` is not None.
+        :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
+        """
+        if decibels:
+            scaler = lambda data: 20 * np.log10(np.abs(data))
+            vertical_label = 'residuals magnitude / dB'
+        else:
+            scaler = lambda data: np.abs(data)
+            vertical_label = 'residuals magnitude'
+        return _plot_residuals_vs_frequency(resonator, scaler, vertical_label, axes, frequency_scale, three_ticks,
+                                            label_axes, residuals_settings, **subplots_kwds)
+
+
 def phase_vs_frequency(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
                        frequency_scale=1, three_ticks=True, degrees=True, label_axes=True, plot_data=True,
                        plot_fit=True, plot_initial=False, plot_resonance=True, measurement_settings=None,
@@ -151,6 +189,36 @@ def phase_vs_frequency(resonator, axes=None, normalize=False, num_model_points=d
     return _plot_vs_frequency(resonator, scaler, vertical_label, axes, normalize, num_model_points, frequency_scale,
                               three_ticks, label_axes, plot_data, plot_fit, plot_initial, plot_resonance,
                               measurement_settings, fit_settings, initial_settings, resonance_settings, **subplots_kwds)
+
+
+def residual_phase_vs_frequency(resonator, axes=None, frequency_scale=1, three_ticks=True, degrees=True,
+                                label_axes=True, residuals_settings=None, **subplots_kwds):
+        """
+        Plot phase of the residuals versus frequency; if no Axes is given, return a new Figure and Axes.
+
+        :param resonator: an instance of a fitter.ResonatorFitter subclass.
+        :param axes: a matplotlib Axes instance; if None, create new Figure and Axes objects using
+          `fig, ax = plt.subplots(**subplots_kwds)`, plot using these, and return them.
+        :param frequency_scale: a float by which the plotted frequencies are multiplied; if this is an integer power of
+          10^-3, then automatic horizontal axis label will have the correct units of Hz, kHz, etc.
+        :param three_ticks: if True, the horizontal axis will have exactly three tick marks at the minimum frequency,
+          resonance frequency, and maximum frequency.
+        :param degrees: if True, plot the phase in degrees instead of radians.
+        :param label_axes: if True, give the axes reasonable labels; see also `frequency_scale`.
+        :param residuals_settings: a dict of pyplot.plot keywords used to plot the residuals; see `residuals_defaults`
+          in this module.
+        :param subplots_kwds: keywords passed directly to `pyplot.subplots` to create a new figure and axes; ignored if
+          `axes` is not None.
+        :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
+        """
+        if degrees:
+            scaler = lambda data: np.degrees(np.angle(data))
+            vertical_label = 'residuals phase / deg'
+        else:
+            scaler = lambda data: np.angle(data)
+            vertical_label = 'residuals phase / rad'
+        return _plot_residuals_vs_frequency(resonator, scaler, vertical_label, axes, frequency_scale, three_ticks,
+                                            label_axes, residuals_settings, **subplots_kwds)
 
 
 def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=False,
@@ -228,15 +296,38 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
         return figure, axes
 
 
+def _plot_residuals_vs_frequency(resonator, scaler, vertical_label, axes=None, frequency_scale=1, three_ticks=True,
+                                 label_axes=True, residuals_settings=None, **subplots_kwds):
+    if axes is None:
+        figure, axes = plt.subplots(**subplots_kwds)
+    else:
+        figure = None
+    residuals_kwds = residuals_defaults.copy()
+    if residuals_settings is not None:
+        residuals_kwds.update(residuals_settings)
+    axes.plot(frequency_scale * resonator.frequency, scaler(resonator.residuals), **residuals_kwds)
+    if three_ticks:
+        axes.set_xticks(frequency_scale * np.array([resonator.frequency.min(), resonator.resonance_frequency,
+                                                    resonator.frequency.max()]))
+    if label_axes:
+        try:
+            axes.set_xlabel('frequency / {}'.format(frequency_scale_to_unit[frequency_scale]))
+        except KeyError:
+            axes.set_xlabel('frequency')
+        axes.set_ylabel(vertical_label)
+    if figure is not None:
+        return figure, axes
+
+
 def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
                        equal_aspect=True, label_axes=True, plot_data=True, plot_fit=True,
                        plot_initial=False, plot_resonance=True, measurement_settings=None, fit_settings=None,
                        initial_settings=None, resonance_settings=None, crosshairs=True, **subplots_kwds):
     """
-    Plot imaginary parts versus real parts on the given axis for the data, best-fit model, and model at the best-fit
-    resonance frequency; return a structure containing the measurement, model, and resonance values.
+    Plot the imaginary parts versus the real parts of the data, best-fit model, and model at the best-fit resonance
+    frequency; plot on the given Axes or return a matplotlib Figure and Axes if none is given.
 
-    :param resonator: an instance of a fitter.ResonatorFitter subclass.
+    :param resonator: an instance of a base.ResonatorFitter subclass.
     :param axes: a matplotlib Axes instance.
     :param normalize: if True, normalize all of the plotted values to the resonator plane by dividing them by the
       best-fit background model values.
@@ -329,11 +420,49 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
         return figure, axes
 
 
-def triptych(resonator, three_axes=None, normalize=False, num_model_points=default_num_model_points,
-             frequency_scale=1, three_ticks=True, decibels=True, degrees=True, equal_aspect=True, label_axes=True,
-             figure_settings=None, gridspec_settings=None, plot_data=True, plot_fit=True,
-             plot_initial=False, plot_resonance=True, measurement_settings=None, fit_settings=None,
-             initial_settings=None, resonance_settings=None, crosshairs=True, **subplots_kwds):
+def residuals_real_and_imaginary(resonator, axes=None, equal_aspect=True, label_axes=True, residuals_settings=None,
+                                 crosshairs=True, **subplots_kwds):
+    """
+    Plot the imaginary parts versus the real parts of the residuals; plot on the given Axes or return a matplotlib
+    Figure and Axes if none is given.
+
+    :param resonator: an instance of a base.ResonatorFitter subclass.
+    :param axes: a matplotlib Axes instance.
+    :param equal_aspect: if True, set the axes aspect ratio to 'equal' so that the normalized resonance forms a circle.
+    :param label_axes: if True, give the axes reasonable labels.
+    :param residuals_settings: a dict of pyplot.plot keywords used to plot the residual values; see
+      `residuals_defaults` in this module.
+    :param crosshairs: if True, plot horizontal and vertical lines that pass through the origin.
+    :param subplots_kwds: keywords passed directly to `pyplot.subplots` to create a new figure and axes; ignored if
+      `axes` is not None.
+    :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
+    """
+    if axes is None:
+        figure, axes = plt.subplots(**subplots_kwds)
+    else:
+        figure = None
+    if crosshairs:
+        axes.axhline(0, **crosshairs_defaults)
+        axes.axvline(0, **crosshairs_defaults)
+    if equal_aspect:
+        axes.set_aspect('equal')
+    if label_axes:
+        axes.set_xlabel('real residuals')
+        axes.set_ylabel('imag residuals')
+    residuals_kwds = residuals_defaults.copy()
+    if residuals_settings is not None:
+        residuals_kwds.update(residuals_settings)
+    residuals = resonator.residuals
+    axes.plot(residuals.real, residuals.imag, **residuals_kwds)
+    if figure is not None:
+        return figure, axes
+
+
+def triptych(resonator, three_axes=None, normalize=False, num_model_points=default_num_model_points, frequency_scale=1,
+             three_ticks=True, decibels=True, degrees=True, equal_aspect=True, label_axes=True, figure_settings=None,
+             gridspec_settings=None, plot_data=True, plot_fit=True, plot_initial=False, plot_resonance=True,
+             data_settings=None, fit_settings=None, initial_settings=None, resonance_settings=None, crosshairs=True,
+             **subplots_kwds):
     """
     Plot the resonator data in three ways: magnitude versus frequency, phase versus frequency, and imaginary versus real
     using the plotting functions in this module. See those functions for the meanings of the parameters not given below.
@@ -362,19 +491,19 @@ def triptych(resonator, three_axes=None, normalize=False, num_model_points=defau
     magnitude_vs_frequency(resonator=resonator, axes=ax_magnitude, normalize=normalize,
                            num_model_points=num_model_points, frequency_scale=frequency_scale, three_ticks=three_ticks,
                            decibels=decibels, label_axes=label_axes, plot_data=plot_data, plot_fit=plot_fit,
-                           plot_initial=plot_initial, plot_resonance=plot_resonance,
-                           nmeasurement_settings=measurement_settings, fit_settings=fit_settings,
-                           initial_settings=initial_settings, resonance_settings=resonance_settings, **subplots_kwds)
+                           plot_initial=plot_initial, plot_resonance=plot_resonance, data_settings=data_settings,
+                           fit_settings=fit_settings, initial_settings=initial_settings,
+                           resonance_settings=resonance_settings, **subplots_kwds)
     phase_vs_frequency(resonator=resonator, axes=ax_phase, normalize=normalize, num_model_points=num_model_points,
                        frequency_scale=frequency_scale, three_ticks=three_ticks, degrees=degrees, label_axes=label_axes,
                        plot_data=plot_data, plot_fit=plot_fit, plot_initial=plot_initial, plot_resonance=plot_resonance,
-                       nmeasurement_settings=measurement_settings, fit_settings=fit_settings,
-                       initial_settings=initial_settings, resonance_settings=resonance_settings, **subplots_kwds)
+                       data_settings=data_settings, fit_settings=fit_settings, initial_settings=initial_settings,
+                       resonance_settings=resonance_settings, **subplots_kwds)
     real_and_imaginary(resonator=resonator, axes=ax_complex, normalize=normalize, num_model_points=num_model_points,
-                       equal_aspect=equal_aspect, label_axes=label_axes,
-                       plot_data=plot_data, plot_fit=plot_fit, plot_initial=plot_initial, plot_resonance=plot_resonance,
-                       nmeasurement_settings=measurement_settings, fit_settings=fit_settings,
-                       initial_settings=initial_settings, resonance_settings=resonance_settings, crosshairs=crosshairs,
+                       equal_aspect=equal_aspect, label_axes=label_axes, plot_data=plot_data, plot_fit=plot_fit,
+                       plot_initial=plot_initial, plot_resonance=plot_resonance, data_settings=data_settings,
+                       fit_settings=fit_settings, initial_settings=initial_settings,
+                       resonance_settings=resonance_settings, crosshairs=crosshairs,
                        **subplots_kwds)
     if figure is not None:
         return figure, three_axes

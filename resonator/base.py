@@ -219,13 +219,28 @@ class ResonatorFitter(object):
 
     @property
     def foreground_data(self):
-        """The measured data divided by the background best-fit model calculated at the same frequencies."""
+        """The measured data divided by the background best-fit model evaluated at the same frequencies."""
         return self.data / self.evaluate_fit_background()
 
     @property
     def background_data(self):
-        """The measured data divided by the foreground best-fit model calculated at the same frequencies."""
+        """The measured data divided by the foreground best-fit model evaluated at the same frequencies."""
         return self.data / self.evaluate_fit_foreground()
+
+    @property
+    def residuals(self):
+        """The measured data minus the best-fit model evaluated at the same frequencies."""
+        return self.data - self.evaluate_fit()
+
+    @property
+    def foreground_residuals(self):
+        """The residuals divided by the best-fit background model evaluated at the same frequencies."""
+        return self.residuals / self.evaluate_fit_background()
+
+    @property
+    def background_residuals(self):
+        """The residuals divided by the best-fit background model evaluated at the same frequencies."""
+        return self.residuals / self.evaluate_fit_foreground()
 
     def remove_background(self, frequency, data):
         """
