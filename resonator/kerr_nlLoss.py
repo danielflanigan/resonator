@@ -8,15 +8,19 @@ import numpy as np
 from . import base
 
 
-def kerr_detuning_shift(detuning, coupling_loss, internal_loss, kerr_input, io_coupling_coefficient, choose):
+def kerr_detuning_shift(detuning, coupling_loss, internal_loss, nl_int_loss_over_2K, kerr_input, io_coupling_coefficient, choose):
     """
     Return one chosen real root of the cubic polynomial
     0 = a y^3 + b y^2 + c y + d
-      = y^3 - 2 x y^2 + [(loss_i + loss_c)^2 / 4 + x^2] y - g loss_c \chi,
+      = y^3
+      + (- 2 x + (loss_i + loss_c) \gamma_k) / (1+ \gamma_k^2) *  y^2
+      + [(loss_i + loss_c)^2 / 4 + x^2] / (1+ \gamma_k^2) y
+      - g loss_c  \chi  / (1+ \gamma_k^2) ,
     where the variables have the following meanings:
       x = f / f_r - 1 = detuning -- the the dimensionless fractional frequency detuning,
       loss_c = coupling_loss -- the coupling loss (inverse coupling quality factor),
       loss_i = internal_loss -- the internal loss (inverse internal quality factor),
+      \gamma_k = nl_internal_loss_over_2K  --  the energy decay rate per photon normalized to Kerr coefficient
       g = io_coupling_coefficient -- a number that depends on the coupling geometry (1 for reflection or transmission
        and 1/2 for shunt / hanger), and
       \chi = kerr_input -- the dimensionless, rescaled input photon rate, discussed below.
@@ -35,9 +39,7 @@ def kerr_detuning_shift(detuning, coupling_loss, internal_loss, kerr_input, io_c
       H = \hbar \omega_r a^\dag a + (\hbar K / 2) a^\dag a^\dag a a,
     where a (a^\dag) is the annihilation (creation) operator for photons in the resonator. The cubic equation is
     exactly equivalent to Equation 37 of B. Yurke and E. Buks Journal of Lightwave Technology 24, 5054 (2006)
-    with the nonlinear loss term \gamma_3 = 0. Without a priori knowledge of either the Kerr coefficient or the
-    input power, the only way to avoid degeneracy between the parameters is to use the Kerr detuning, instead of
-    the photon number, as the independent variable.
+    including the nonlinear loss term \gamma_3.
 
     The `choose` function selects one real root when there are multiple real roots that correspond to multiple stable
     photon number states in the resonator. The recommended value of this function is `np.max` when fitting data taken
@@ -72,9 +74,10 @@ def kerr_detuning_shift(detuning, coupling_loss, internal_loss, kerr_input, io_c
         is_zero_size = True
         detuning.shape = (1,)
     roots = np.zeros(detuning.size)
-    b = -2 * detuning
-    c = ((coupling_loss + internal_loss) / 2) ** 2 + detuning ** 2
-    d = -io_coupling_coefficient * coupling_loss * kerr_input
+    denom_bcd = 1 + nl_int_loss_over_2K ** 2
+    b = (-2 * detuning + (coupling_loss + internal_loss) * nl_int_loss_over_2K) / denom_bcd
+    c = (((coupling_loss + internal_loss) / 2) ** 2 + detuning ** 2) / denom_bcd
+    d = (-io_coupling_coefficient * coupling_loss * kerr_input) / denom_bcd
     delta0 = b ** 2 - 3 * c
     delta1 = 2 * b ** 3 - 9 * b * c + 27 * d
     delta = (4 * delta0 ** 3 - delta1 ** 2) / 27
@@ -135,6 +138,13 @@ def kerr_given_input_rate(input_rate, resonance_frequency, kerr_input):
     return kerr_input * (2 * np.pi * resonance_frequency) ** 2 / input_rate
 
 
+def kerr_given_input_power(input_power_watt, resonance_frequency, kerr_input):
+    wr3OverPin = (2 * np.pi * resonance_frequency )**3 / input_power_watt
+    kerr = kerr_input * hbar *  wr3OverPin /(2 * np.pi)
+    #kerrerr = kerr_input * hbar *  wr3OverPin /(2 * np.pi)
+    return kerr
+
+
 def input_rate_given_kerr(kerr_coefficient, resonance_frequency, kerr_input):
     return kerr_input * (2 * np.pi * resonance_frequency) ** 2 / kerr_coefficient
 
@@ -145,7 +155,7 @@ def photon_number(resonance_frequency, kerr_detuning_shift, kerr_input, input_ra
 
 # ToDo: add static methods to choose roots
 # ToDo: add methods to calculate the kerr detuning and kerr frequency shift
-class KerrFitter(base.ResonatorFitter):
+class KerrNlLossFitter(base.ResonatorFitter):
 
     def __init__(self, frequency, data, choose, foreground_model=None, background_model=None, errors=None,
                  params=None, **fit_kwds):
@@ -155,7 +165,7 @@ class KerrFitter(base.ResonatorFitter):
           of using another choose function, create a new fitter.
         """
         self._choose = choose  # Modifying this will lead to inconsistent results
-        super(KerrFitter, self).__init__(frequency=frequency, data=data, foreground_model=foreground_model,
+        super(KerrNlLossFitter, self).__init__(frequency=frequency, data=data, foreground_model=foreground_model,
                                          background_model=background_model, errors=errors, params=params, **fit_kwds)
 
     def photon_number(self, input_frequency, input_rate, choose=None):
@@ -164,6 +174,7 @@ class KerrFitter(base.ResonatorFitter):
         detuning = input_frequency / self.resonance_frequency - 1
         shift = kerr_detuning_shift(
             detuning=detuning, coupling_loss=self.coupling_loss, internal_loss=self.internal_loss,
+            nl_int_loss_over_2K=self.nl_int_loss_over_2K,
             kerr_input=self.kerr_input, io_coupling_coefficient=self.foreground_model.io_coupling_coefficient,
             choose=choose)
         return photon_number(resonance_frequency=self.resonance_frequency, kerr_detuning_shift=shift,
