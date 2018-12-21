@@ -67,10 +67,10 @@ frequency_scale_to_unit = {1: 'Hz',
 
 def magnitude_vs_frequency(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
                            frequency_scale=1, three_ticks=True, decibels=True, label_axes=True, plot_data=True,
-                           plot_fit=True, plot_initial=False, plot_resonance=True, measurement_settings=None,
+                           plot_fit=True, plot_initial=False, plot_resonance=True, data_settings=None,
                            fit_settings=None, initial_settings=None, resonance_settings=None, **subplots_kwds):
     """
-    On the given axis, plot magnitude versus frequency of any or all of the following: the measurement data, the
+    On the given axis, plot magnitude versus frequency of any or all of the following: the measured data, the
     best-fit model, and the initial-fit model.
 
     :param resonator: an instance of a fitter.ResonatorFitter subclass.
@@ -90,7 +90,7 @@ def magnitude_vs_frequency(resonator, axes=None, normalize=False, num_model_poin
     :param plot_initial: if True, plot the initial-fit model.
     :param plot_resonance: if True, plot the best-fit and/or initial-fit model data at the corresponding resonance
       frequency.
-    :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
+    :param data_settings: a dict of pyplot.plot keywords used to plot the measured data values; see
       `data_defaults` in this module.
     :param fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
     `fit_defaults` in this module.
@@ -103,18 +103,21 @@ def magnitude_vs_frequency(resonator, axes=None, normalize=False, num_model_poin
     :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
     """
     if decibels:
-        scaler = lambda data: 20 * np.log10(np.abs(data))
+        transformer = lambda data: 20 * np.log10(np.abs(data))
         vertical_label = 'magnitude / dB'
     else:
-        scaler = lambda data: np.abs(data)
+        transformer = lambda data: np.abs(data)
         vertical_label = 'magnitude'
-    return _plot_vs_frequency(resonator, scaler, vertical_label, axes, normalize, num_model_points, frequency_scale,
-                              three_ticks, label_axes, plot_data, plot_fit, plot_initial, plot_resonance,
-                              measurement_settings, fit_settings, initial_settings, resonance_settings, **subplots_kwds)
+    return _plot_vs_frequency(resonator=resonator, transformer=transformer, vertical_label=vertical_label, axes=axes,
+                              normalize=normalize, num_model_points=num_model_points, frequency_scale=frequency_scale,
+                              three_ticks=three_ticks, label_axes=label_axes, plot_data=plot_data, plot_fit=plot_fit,
+                              plot_initial=plot_initial, plot_resonance=plot_resonance, data_settings=data_settings,
+                              fit_settings=fit_settings, initial_settings=initial_settings,
+                              resonance_settings=resonance_settings, **subplots_kwds)
 
 
-def residual_magnitude_vs_frequency(resonator, axes=None, frequency_scale=1, three_ticks=True, decibels=False,
-                                    label_axes=True, residuals_settings=None, **subplots_kwds):
+def magnitude_residuals_vs_frequency(resonator, axes=None, frequency_scale=1, three_ticks=True, decibels=False,
+                                     label_axes=True, residuals_settings=None, **subplots_kwds):
         """
         Plot the magnitude of the residuals versus frequency; if no Axes is given, return a new Figure and Axes.
 
@@ -134,21 +137,23 @@ def residual_magnitude_vs_frequency(resonator, axes=None, frequency_scale=1, thr
         :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
         """
         if decibels:
-            scaler = lambda data: 20 * np.log10(np.abs(data))
+            transformer = lambda data: 20 * np.log10(np.abs(data))
             vertical_label = 'residuals magnitude / dB'
         else:
-            scaler = lambda data: np.abs(data)
+            transformer = lambda data: np.abs(data)
             vertical_label = 'residuals magnitude'
-        return _plot_residuals_vs_frequency(resonator, scaler, vertical_label, axes, frequency_scale, three_ticks,
-                                            label_axes, residuals_settings, **subplots_kwds)
+        return _plot_residuals_vs_frequency(resonator=resonator, transformer=transformer, vertical_label=vertical_label,
+                                            axes=axes, frequency_scale=frequency_scale, three_ticks=three_ticks,
+                                            label_axes=label_axes, residuals_settings=residuals_settings,
+                                            **subplots_kwds)
 
 
 def phase_vs_frequency(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
                        frequency_scale=1, three_ticks=True, degrees=True, label_axes=True, plot_data=True,
-                       plot_fit=True, plot_initial=False, plot_resonance=True, measurement_settings=None,
+                       plot_fit=True, plot_initial=False, plot_resonance=True, data_settings=None,
                        fit_settings=None, initial_settings=None, resonance_settings=None, **subplots_kwds):
     """
-    On the given axis, plot phase versus frequency of any or all of the following: the measurement data, the
+    On the given axis, plot phase versus frequency of any or all of the following: the measured data, the
     best-fit model, and the initial-fit model.
 
     :param resonator: an instance of a fitter.ResonatorFitter subclass.
@@ -168,7 +173,7 @@ def phase_vs_frequency(resonator, axes=None, normalize=False, num_model_points=d
     :param plot_initial: if True, plot the initial-fit model.
     :param plot_resonance: if True, plot the best-fit and/or initial-fit model data at the corresponding resonance
       frequency.
-    :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
+    :param data_settings: a dict of pyplot.plot keywords used to plot the measured data values; see
       `data_defaults` in this module.
     :param fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
     `fit_defaults` in this module.
@@ -181,18 +186,21 @@ def phase_vs_frequency(resonator, axes=None, normalize=False, num_model_points=d
     :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
     """
     if degrees:
-        scaler = lambda data: np.degrees(np.angle(data))
+        transformer = lambda data: np.degrees(np.angle(data))
         vertical_label = 'phase / deg'
     else:
-        scaler = lambda data: np.angle(data)
+        transformer = lambda data: np.angle(data)
         vertical_label = 'phase / rad'
-    return _plot_vs_frequency(resonator, scaler, vertical_label, axes, normalize, num_model_points, frequency_scale,
-                              three_ticks, label_axes, plot_data, plot_fit, plot_initial, plot_resonance,
-                              measurement_settings, fit_settings, initial_settings, resonance_settings, **subplots_kwds)
+    return _plot_vs_frequency(resonator=resonator, transformer=transformer, vertical_label=vertical_label, axes=axes,
+                              normalize=normalize, num_model_points=num_model_points, frequency_scale=frequency_scale,
+                              three_ticks=three_ticks, label_axes=label_axes, plot_data=plot_data, plot_fit=plot_fit,
+                              plot_initial=plot_initial, plot_resonance=plot_resonance, data_settings=data_settings,
+                              fit_settings=fit_settings, initial_settings=initial_settings,
+                              resonance_settings=resonance_settings, **subplots_kwds)
 
 
-def residual_phase_vs_frequency(resonator, axes=None, frequency_scale=1, three_ticks=True, degrees=True,
-                                label_axes=True, residuals_settings=None, **subplots_kwds):
+def phase_residuals_vs_frequency(resonator, axes=None, frequency_scale=1, three_ticks=True, degrees=True,
+                                 label_axes=True, residuals_settings=None, **subplots_kwds):
         """
         Plot phase of the residuals versus frequency; if no Axes is given, return a new Figure and Axes.
 
@@ -212,25 +220,25 @@ def residual_phase_vs_frequency(resonator, axes=None, frequency_scale=1, three_t
         :return: if axes is None, return a new Figure and Axes objects; otherwise, return None.
         """
         if degrees:
-            scaler = lambda data: np.degrees(np.angle(data))
+            transformer = lambda data: np.degrees(np.angle(data))
             vertical_label = 'residuals phase / deg'
         else:
-            scaler = lambda data: np.angle(data)
+            transformer = lambda data: np.angle(data)
             vertical_label = 'residuals phase / rad'
-        return _plot_residuals_vs_frequency(resonator, scaler, vertical_label, axes, frequency_scale, three_ticks,
-                                            label_axes, residuals_settings, **subplots_kwds)
+        return _plot_residuals_vs_frequency(resonator=resonator, transformer=transformer, vertical_label=vertical_label,
+                                            axes=axes, frequency_scale=frequency_scale, three_ticks=three_ticks,
+                                            label_axes=label_axes, residuals_settings=residuals_settings,
+                                            **subplots_kwds)
 
 
-def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=False,
-                       num_model_points=default_num_model_points, frequency_scale=1, three_ticks=True, label_axes=True,
-                       plot_measurement=True, plot_fit=True, plot_initial=False, plot_resonance=True,
-                       data_settings=None, fit_settings=None, initial_settings=None,
-                       resonance_settings=None, **subplots_kwds):
+def _plot_vs_frequency(resonator, transformer, vertical_label, axes, normalize, num_model_points, frequency_scale,
+                       three_ticks, label_axes, plot_data, plot_fit, plot_initial, plot_resonance,
+                       data_settings, fit_settings, initial_settings, resonance_settings, **subplots_kwds):
     if axes is None:
         figure, axes = plt.subplots(**subplots_kwds)
     else:
         figure = None
-    if plot_measurement:
+    if plot_data:
         data_kwds = data_defaults.copy()
         if data_settings is not None:
             data_kwds.update(data_settings)
@@ -238,7 +246,7 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
             data = resonator.foreground_data
         else:
             data = resonator.data
-        axes.plot(frequency_scale * resonator.frequency, scaler(data), **data_kwds)
+        axes.plot(frequency_scale * resonator.frequency, transformer(data), **data_kwds)
     if plot_fit or plot_initial:  # Used for both best-fit and initial-fit plots
         if num_model_points is None:
             model_frequency = resonator.frequency
@@ -252,7 +260,7 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
             fit = resonator.evaluate_fit_foreground(frequency=model_frequency)
         else:
             fit = resonator.evaluate_fit(frequency=model_frequency)
-        axes.plot(frequency_scale * model_frequency, scaler(fit), **fit_kwds)
+        axes.plot(frequency_scale * model_frequency, transformer(fit), **fit_kwds)
         if plot_resonance:
             fit_resonance_kwds = fit_defaults.copy()
             fit_resonance_kwds.update(resonance_defaults)
@@ -262,7 +270,7 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
                 fit_resonance = resonator.evaluate_fit_foreground(frequency=resonator.resonance_frequency)
             else:
                 fit_resonance = resonator.evaluate_fit(frequency=resonator.resonance_frequency)
-            axes.plot(frequency_scale * resonator.resonance_frequency, scaler(fit_resonance), **fit_resonance_kwds)
+            axes.plot(frequency_scale * resonator.resonance_frequency, transformer(fit_resonance), **fit_resonance_kwds)
     if plot_initial:
         initial_kwds = initial_defaults.copy()
         if initial_settings is not None:
@@ -271,7 +279,7 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
             initial = resonator.evaluate_initial_foreground(frequency=model_frequency)
         else:
             initial = resonator.evaluate_initial(frequency=model_frequency)
-        axes.plot(frequency_scale * model_frequency, scaler(initial), **initial_kwds)
+        axes.plot(frequency_scale * model_frequency, transformer(initial), **initial_kwds)
         if plot_resonance:
             initial_resonance_kwds = initial_defaults.copy()
             initial_resonance_kwds.update(resonance_defaults)
@@ -281,7 +289,7 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
                 initial_resonance = resonator.evaluate_initial_foreground(frequency=resonator.resonance_frequency)
             else:
                 initial_resonance = resonator.evaluate_initial(frequency=resonator.resonance_frequency)
-            axes.plot(frequency_scale * resonator.resonance_frequency, scaler(initial_resonance),
+            axes.plot(frequency_scale * resonator.resonance_frequency, transformer(initial_resonance),
                       **initial_resonance_kwds)
     if three_ticks:
         axes.set_xticks(frequency_scale * np.array([resonator.frequency.min(), resonator.resonance_frequency,
@@ -296,8 +304,8 @@ def _plot_vs_frequency(resonator, scaler, vertical_label, axes=None, normalize=F
         return figure, axes
 
 
-def _plot_residuals_vs_frequency(resonator, scaler, vertical_label, axes=None, frequency_scale=1, three_ticks=True,
-                                 label_axes=True, residuals_settings=None, **subplots_kwds):
+def _plot_residuals_vs_frequency(resonator, transformer, vertical_label, axes, frequency_scale, three_ticks, label_axes,
+                                 residuals_settings, **subplots_kwds):
     if axes is None:
         figure, axes = plt.subplots(**subplots_kwds)
     else:
@@ -305,7 +313,7 @@ def _plot_residuals_vs_frequency(resonator, scaler, vertical_label, axes=None, f
     residuals_kwds = residuals_defaults.copy()
     if residuals_settings is not None:
         residuals_kwds.update(residuals_settings)
-    axes.plot(frequency_scale * resonator.frequency, scaler(resonator.residuals), **residuals_kwds)
+    axes.plot(frequency_scale * resonator.frequency, transformer(resonator.residuals), **residuals_kwds)
     if three_ticks:
         axes.set_xticks(frequency_scale * np.array([resonator.frequency.min(), resonator.resonance_frequency,
                                                     resonator.frequency.max()]))
@@ -321,7 +329,7 @@ def _plot_residuals_vs_frequency(resonator, scaler, vertical_label, axes=None, f
 
 def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=default_num_model_points,
                        equal_aspect=True, label_axes=True, plot_data=True, plot_fit=True,
-                       plot_initial=False, plot_resonance=True, measurement_settings=None, fit_settings=None,
+                       plot_initial=False, plot_resonance=True,  data_settings=None, fit_settings=None,
                        initial_settings=None, resonance_settings=None, crosshairs=True, **subplots_kwds):
     """
     Plot the imaginary parts versus the real parts of the data, best-fit model, and model at the best-fit resonance
@@ -339,7 +347,7 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
     :param plot_initial: if True, plot the initial-fit model.
     :param plot_resonance: if True, plot the best-fit and/or initial-fit model data at the corresponding resonance
       frequency.
-    :param measurement_settings: a dict of pyplot.plot keywords used to plot the measurement values; see
+    :param data_settings: a dict of pyplot.plot keywords used to plot the measured data values; see
       `data_defaults` in this module.
     :param fit_settings: a dict of pyplot.plot keywords used to plot the best-fit model values; see
     `fit_defaults` in this module.
@@ -361,8 +369,8 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
         axes.axvline(0, **crosshairs_defaults)
     if plot_data:
         data_kwds = data_defaults.copy()
-        if measurement_settings is not None:
-            data_kwds.update(measurement_settings)
+        if data_settings is not None:
+            data_kwds.update(data_settings)
         if normalize:
             data = resonator.foreground_data
         else:
@@ -420,7 +428,7 @@ def real_and_imaginary(resonator, axes=None, normalize=False, num_model_points=d
         return figure, axes
 
 
-def residuals_real_and_imaginary(resonator, axes=None, equal_aspect=True, label_axes=True, residuals_settings=None,
+def real_and_imaginary_residuals(resonator, axes=None, equal_aspect=True, label_axes=True, residuals_settings=None,
                                  crosshairs=True, **subplots_kwds):
     """
     Plot the imaginary parts versus the real parts of the residuals; plot on the given Axes or return a matplotlib

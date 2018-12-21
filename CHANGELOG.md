@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.4] 2018-12-21
+### Fixed
+- Harmonized some keyword arguments in `see.py`
+
 ## [0.4.3] 2018-11-08
 ### Fixed
 -  Instead of causing an exception, errors on derived values (e.g. quality factors) are None when the parameter errors are None because the fit cannot estimate them. 
