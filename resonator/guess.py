@@ -19,7 +19,7 @@ def smooth(data, fraction=0.05, flatten_edges=True):
 
 def distances(data, pad_ends=True):
     """
-    Return an array of the same size as the given data containing the sum of the nearest-neighbor distances.
+    Return an array containing the sum of the nearest-neighbor distances of the given data.
 
     :param data: complex scattering parameter data.
     :param pad_ends: if True, duplicate the end values so that the returned array has the same size as the data.
@@ -30,6 +30,24 @@ def distances(data, pad_ends=True):
     if pad_ends:
         d = np.concatenate((d[:1], d, d[-1:]))
     return d
+
+
+def distances_per_frequency(frequency, data, pad_ends=True):
+    """
+    Return an array containing the sum of the nearest-neighbor distances of the given data divided by the sum of the
+    nearest-neighbor frequency differences. This should give the same result as `distances` for data points that are
+    equally spaced in frequency, but will give more relevant results for irregularly-spaced data.
+
+    :param data: complex scattering parameter data.
+    :param frequency: the frequencies at which the data was collected.
+    :param pad_ends: if True, duplicate the end values so that the returned array has the same size as the data.
+    :return: array[float]
+    """
+    d = distances(data=data, pad_ends=pad_ends)
+    f = np.diff(frequency[:-1]) + np.diff(frequency[1:])
+    if pad_ends:
+        f = np.concatenate((f[:1], f, f[-1:]))
+    return d / f
 
 
 def smallest(values, fraction=0.1):

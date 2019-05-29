@@ -35,7 +35,7 @@ class Phase(base.BackgroundModel):
 
         super(Phase, self).__init__(func=phase, *args, **kwds)
 
-    def guess(self, data, fraction=0.1, **kwds):
+    def guess(self, data, frequency, fraction=0.1, **kwds):
         """
         :param data: complex scattering parameter data.
         :param fraction: the fraction of points with lowest nearest-neighbor distances to use to estimate the phase.
@@ -43,7 +43,8 @@ class Phase(base.BackgroundModel):
         :return: lmfit.Parameters
         """
         params = self.make_params()
-        indices = guess.smallest(guess.distances(data), fraction=fraction)
+        # Use the points with smallest nearest-neighbor distances per frequency difference
+        indices = guess.smallest(guess.distances_per_frequency(frequency=frequency, data=data), fraction=fraction)
         median = np.median(data[indices].real) + 1j * np.median(data[indices].imag)
         params['phase'].value = np.angle(median)
         return params
@@ -97,7 +98,7 @@ class MagnitudePhase(base.BackgroundModel):
 
         super(MagnitudePhase, self).__init__(func=magnitude_phase, *args, **kwds)
 
-    def guess(self, data, fraction=0.1, **kwds):
+    def guess(self, data, frequency, fraction=0.1, **kwds):
         """
         This function should calculate very good inital values for configurations in which the transmission far from
         resonance is nonzero, such as the shunt and reflection configurations. It will underestimate the magnitude for
@@ -113,7 +114,8 @@ class MagnitudePhase(base.BackgroundModel):
         :return: lmfit.Parameters
         """
         params = self.make_params()
-        indices = guess.smallest(guess.distances(data), fraction=fraction)
+        # Use the points with smallest nearest-neighbor distances per frequency difference
+        indices = guess.smallest(guess.distances_per_frequency(frequency=frequency, data=data), fraction=fraction)
         median = np.median(data[indices].real) + 1j * np.median(data[indices].imag)
         params['magnitude'].set(value=np.abs(median), min=0)
         params['phase'].value = np.angle(median)
@@ -152,12 +154,12 @@ class MagnitudePhaseDelay(base.BackgroundModel):
         params = self.make_params()
         frequency_reference = frequency.mean()
         params['frequency_reference'].set(value=frequency_reference, vary=False)
-        # Use a fraction of slowly-varying points, meaning those with smallest nearest-neighbor distances
-        slow = guess.smallest(guess.distances(data), fraction=fraction)
-        phase, delay = guess.polyfit_phase_delay(frequency=frequency[slow] - frequency_reference, data=data[slow])
+        # Use the points with smallest nearest-neighbor distances per frequency difference
+        indices = guess.smallest(guess.distances_per_frequency(frequency=frequency, data=data), fraction=fraction)
+        phase, delay = guess.polyfit_phase_delay(frequency=frequency[indices] - frequency_reference, data=data[indices])
         params['phase'].set(value=phase)
         params['delay'].set(value=delay)
-        _, offset = guess.polyfit_magnitude_slope_offset(frequency[slow] - frequency_reference, data=data[slow])
+        _, offset = guess.polyfit_magnitude_slope_offset(frequency[indices] - frequency_reference, data=data[indices])
         params['magnitude'].set(value=offset, min=0)
         return params
 
@@ -197,12 +199,13 @@ class MagnitudeSlopeOffsetPhaseDelay(base.BackgroundModel):
         params = self.make_params()
         frequency_reference = frequency.mean()
         params['frequency_reference'].set(value=frequency_reference, vary=False)
-        # Use a fraction of slowly-varying points, meaning those with smallest nearest-neighbor distances.
-        slow = guess.smallest(guess.distances(data), fraction=fraction)
-        phase, delay = guess.polyfit_phase_delay(frequency=frequency[slow] - frequency_reference, data=data[slow])
+        # Use the points with smallest nearest-neighbor distances per frequency difference
+        indices = guess.smallest(guess.distances_per_frequency(frequency=frequency, data=data), fraction=fraction)
+        phase, delay = guess.polyfit_phase_delay(frequency=frequency[indices] - frequency_reference, data=data[indices])
         params['phase'].set(value=phase)
         params['delay'].set(value=delay)
-        slope, offset = guess.polyfit_magnitude_slope_offset(frequency[slow] - frequency_reference, data=data[slow])
+        slope, offset = guess.polyfit_magnitude_slope_offset(frequency[indices] - frequency_reference,
+                                                             data=data[indices])
         params['magnitude_slope'].set(value=slope)
         params['magnitude_offset'].set(value=offset, min=0)
         return params

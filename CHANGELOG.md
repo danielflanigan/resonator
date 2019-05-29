@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.5] 2019-05-29
+### Changed
+- The default guessing function now handles data irregularly spaced in frequency.
+
 ## [0.4.4] 2018-12-21
 ### Fixed
 - Harmonized some keyword arguments in `see.py`
