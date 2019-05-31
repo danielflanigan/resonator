@@ -1,4 +1,7 @@
 # Changelog
+## [0.4.6] 2019-05-31
+### Changed
+- Updated documentation, README, and example notebooks.
 
 ## [0.4.5] 2019-05-29
 ### Changed

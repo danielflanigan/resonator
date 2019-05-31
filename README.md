@@ -1,13 +1,33 @@
 # Resonator
 Fit and analyze scattering parameter data from resonators.
 
+## Quick start
+Data from a resonator can be fit and analyzed in a few lines of code.
+For example, to fit a resonator in the shunt-coupled configuration, print data about the fit, then plot the data, fit, and response at resonance in the complex plane, do the following:
+```python
+from resonator import shunt, see
+frequency, s21 = get_the_resonator_data()
+r = shunt.LinearShuntFitter(frequency=frequency, data=s21)
+print(r.result.fit_report())
+fig, ax = see.real_and_imaginary(resonator=r)
+``` 
+where `frequency` is a numpy array of frequencies corresponding to the complex `s21` data array.
+The scattering parameter models are parameterized in terms of resonator **inverse quality factors**, which are called *losses* in the code.
+Thus, the fit report above will show parameters called `internal_loss` and `coupling_loss`, which are the inverses of the corresponding quality factors. 
+See below for discussion of this choice.
+The fitter object (`r` above) makes the best-fit parameters as well as quality factors, energy decay rates, and the standard errors of all of these available for attribute access.
+Try `print(dir(r))` to see a list of the available attributes.
+For example, `r.Q_i` is the internal quality factor, and `r.coupling_energy_decay_rate_error` is the standard error of the coupling energy decay rate. 
+
 ## Overview
-The response of a microwave system will include effects such as loss, amplifier gain, phase shifts, and cable delay.
-The package can usually fit data from resonators with reasonably high quality factors even when the system gain and phase have not been characterized.
+This package was developed to fit data from superconducting microwave resonators, which are measured at low temperature in cryostats.
+In these systems, measured signals through the microwave lines includes effects such as loss, amplifier gain, phase shifts, and cable delay.
+This package can usually fit data from resonators with reasonably high quality factors even when the system gain and phase have not been characterized.
 It does this by assuming that the measured scattering parameter is the product of an ideal resonator model, which is what one would measure in an imaginary on-chip microwave measurement, and the transmission of everything else in the system.
 The system response is called the *background*, and the resonator response is called the *foreground*, so the models are of the form
 `model = background * foreground`.
-The user can choose between background models with different degrees of complexity, depending on how many non-ideal effects are necessary to describe the data.
+The user can choose between background models with various free parameters, such as a cable delay or a slope in the transmission magnitude. 
+Models with more free parameters can be used when the background has more complex structure, while models with fewer free parameters will produce lower error bars if they can adequately describe the data. 
 
 The modules `reflection.py`, `shunt.py`, and `transmission.py` contain classes to fit data from resonators in the following coupling configurations: shunt-coupled (signal transmitted past resonator), reflection (signal reflected from resonator), and transmission (signal transmitted through resonator).
 The module `background.py` contains models for everything except for the resonator.
@@ -26,41 +46,13 @@ I recommend installing the package in editable mode:
 /directory/for/code$ pip install -e resonator
 ```
 Instead of moving the code to the site-packages directory, this command creates a link there that tells Python where to find the code.
+This makes it easier to pull updates.
 
 The package requirements are lmfit >= 0.9.3, numpy, and matplotlib for the `see.py` plotting functions.
 The code should run in Python 2.7 or 3.6+.
 
-## Quick start
-Data from a resonator can be fit and analyzed in a few lines of code.
-For example, to fit a resonator in the shunt-coupled (or "hanger") configuration, print data about the fit, then plot the data, fit, and response at resonance in the complex plane, do the following:
-```python
-from matplotlib import pyplot as plt
-from resonator import shunt, see
-frequency, s21 = get_the_resonator_data()
-r = shunt.LinearShuntFitter(frequency=frequency, data=s21)
-print(r.result.fit_report())
-fig, ax = plt.subplots()
-see.real_and_imaginary(resonator=r, axes=ax)
-``` 
-where `frequency` is a numpy array of frequencies corresponding to the complex `s21` data array.
-The scattering parameter models are parameterized in terms of resonator **inverse quality factors**, which are called *losses* in the code.
-Thus, the fit report above will show parameters called `internal_loss` and `coupling_loss`, which are the inverses of the corresponding quality factors. 
-See below for discussion of this choice.
-The fitter object `r` makes the best-fit parameters as well as quality factors, energy decay rates, and the standard errors of all of these available for attribute access.
-Try `print(dir(r))` to see a list of the available attributes.
-For example, `r.Q_i` is the internal quality factor, and `r.coupling_energy_decay_rate_error` is the standard error of the coupling energy decay rate. 
 
-The example code above uses a default background model, called `MagnitudePhase`, which takes the background magnitude and phase to be independent of frequency.
-To fit the same data with a more complex background model that will additionally fit for a time delay, do the following:
-```python
-from resonator import background
-r = shunt.LinearShuntFitter(frequency=frequency, data=s21, background_model=background.MagnitudePhaseDelay())
-```
-(Note that the background model is an **instance**, not a class.)
-All the fits are done in the complex plane, in which the noise from amplifiers should be isotropic. If the complex standard errors of the data points are available, these can be passed to the fitters.
-Since the default assumes equal, isotropic errors at each point, this is important only when the errors differ significantly.  
-
-## Internal calculations
+## Internal models
 Models for resonators are typically written either in terms of quality factors (e.g. Q_internal, Q_external) or in terms
 of energy decay rates that are equal to the resonance angular frequency divided by a quality factor (e.g.
 kappa_external = omega_r / Q_external)).

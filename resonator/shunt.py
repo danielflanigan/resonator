@@ -12,9 +12,10 @@ class AbstractShunt(base.ResonatorModel):
     """
     This is an abstract class that models a resonator operated in the shunt-coupled configuration.
     """
+    # This is the value of the scattering data far from resonance.
     reference_point = 1 + 0j
 
-    # See kerr.kerr_detuning_shift
+    # See kerr.kerr_detuning_shift for the meaning of this.
     io_coupling_coefficient = 1 / 2
 
 
@@ -23,10 +24,17 @@ class AbstractShunt(base.ResonatorModel):
 class LinearShunt(AbstractShunt):
     """
     This class models a linear resonator operated in the shunt-coupled configuration.
+
+    Here, linear means that the energy stored in the resonator is proportional to the power on the feedline. When the
+    input power is sufficiently high, this relationship will start to become more complicated and the shape of the
+    resonance will change. In this case, the resonance can still be fit with a Kerr model.
     """
 
     def __init__(self, *args, **kwds):
         """
+        This class can be used directly, like any lmfit Model, but it is easier to use the LinearShuntFitter wrapper
+        class that is defined in this module.
+
         :param args: arguments passed directly to lmfit.model.Model.__init__().
         :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
@@ -50,19 +58,23 @@ class LinearShunt(AbstractShunt):
 class LinearShuntFitter(linear.LinearResonatorFitter):
     """
     This class fits data from a linear shunt-coupled resonator.
+
+    Here, linear means that the energy stored in the resonator is proportional to the power on the feedline. When the
+    input power is sufficiently high, this relationship will start to become more complicated and the shape of the
+    resonance will change. In this case, the resonance can still be fit with a Kerr model.
     """
 
     def __init__(self, frequency, data, background_model=None, errors=None, **kwds):
         """
-        Fit the given data to a composite model that is the product of a background response model and the Shunt model.
+        Fit the given data to a composite model that is the product of a background model and the LinearShunt model.
 
         :param frequency: an array of floats containing the frequencies at which the data was measured.
         :param data: an array of complex numbers containing the data.
         :param background_model: an instance (not the class) of a model representing the background response without the
-          resonator; the default of background.ComplexConstant assumes that this is modeled well by a single complex
+          resonator; the default of `background.MagnitudePhase()` assumes that this is modeled well by a single complex
           constant at all frequencies.
         :param errors: an array of complex numbers containing the standard errors of the mean of the data points.
-        :param kwds: keyword arguments passed directly to lmfit.model.Model.fit().
+        :param kwds: keyword arguments passed directly to `lmfit.model.Model.fit()`.
         """
         if background_model is None:
             background_model = background.MagnitudePhase()
@@ -85,7 +97,10 @@ class KerrShunt(AbstractShunt):
 
     def __init__(self, choose, *args, **kwds):
         """
-        :param choose: a numpy ufunc; see nonlinear.Kerr.kerr_detuning_shift().
+        This class can be used directly, like any lmfit Model, but it is easier to use the KerrShuntFitter wrapper
+        class that is defined in this module.
+
+        :param choose: a numpy ufunc; see `kerr.kerr_detuning_shift`.
         :param args: arguments passed directly to lmfit.model.Model.__init__().
         :param kwds: keywords passed directly to lmfit.model.Model.__init__().
         """
@@ -121,6 +136,18 @@ class KerrShuntFitter(kerr.KerrFitter):
     """
 
     def __init__(self, frequency, data, choose=np.max, background_model=None, errors=None, **fit_kwds):
+        """
+        Fit the given data to a composite model that is the product of a background model and the KerrShunt model.
+
+        :param frequency: an array of floats containing the frequencies at which the data was measured.
+        :param data: an array of complex numbers containing the data.
+        :param choose: a numpy ufunc; see `kerr.kerr_detuning_shift`.
+        :param background_model: an instance (not the class) of a model representing the background response without the
+          resonator; the default of `background.MagnitudePhase()` assumes that this is modeled well by a single complex
+          constant at all frequencies.
+        :param errors: an array of complex numbers containing the standard errors of the mean of the data points.
+        :param kwds: keyword arguments passed directly to lmfit.model.Model.fit().
+        """
         if background_model is None:
             background_model = background.MagnitudePhase()
         super(KerrShuntFitter, self).__init__(frequency=frequency, data=data, choose=choose,
