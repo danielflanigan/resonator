@@ -232,3 +232,13 @@ class Known(base.BackgroundModel):
             return data_real + 1j * data_imag
 
         super(Known, self).__init__(func=known, *args, **kwds)
+        self._measurement_frequency = measurement_frequency
+        self._measurement_data = measurement_data
+
+    @property
+    def measurement_frequency(self):
+        return self._measurement_frequency
+
+    @property
+    def measurement_data(self):
+        return self._measurement_data

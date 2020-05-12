@@ -32,6 +32,7 @@ def photon_number(detuning, coupling_loss, internal_loss, nonlinear_loss, reduce
       g = io_coupling_coefficient -- a number of order 1 that depends on the coupling geometry.
     The input power is P_{in} = \hbar \omega X_{in}.
 
+    # ToDo: clean up
     The `choose` function selects one real root when there are multiple real roots that correspond to multiple stable
     photon number states in the resonator. The recommended value of this function is `np.min` when fitting data taken
     with a VNA that sweeps the frequency in the positive direction, as is typically done. If the frequency is swept in

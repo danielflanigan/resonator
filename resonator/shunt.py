@@ -1,5 +1,5 @@
 """
-This module contains models and fitters for resonators that are operated in the shunt ("hanger") configuration.
+This module contains models and fitters for resonators that are operated in the shunt configuration.
 """
 from __future__ import absolute_import, division, print_function
 

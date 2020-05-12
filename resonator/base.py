@@ -1,8 +1,7 @@
 """
-This module contains base classes
+This module contains base classes.
 """
 from __future__ import absolute_import, division, print_function
-from collections import namedtuple
 
 import lmfit
 import numpy as np

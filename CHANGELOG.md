@@ -1,24 +1,33 @@
 # Changelog
-## [0.4.6] 2019-05-31
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.5.0] - 2019-05-12
+### Changed
+- Added properties `measurement_frequency` and `measurement_data` to `background.Known`
+
+## [0.4.6] - 2019-05-31
 ### Changed
 - Updated documentation, README, and example notebooks.
 
-## [0.4.5] 2019-05-29
+## [0.4.5] - 2019-05-29
 ### Changed
 - The default guessing function now handles data irregularly spaced in frequency.
 
-## [0.4.4] 2018-12-21
+## [0.4.4] - 2018-12-21
 ### Fixed
 - Harmonized some keyword arguments in `see.py`
 
-## [0.4.3] 2018-11-08
+## [0.4.3] - 2018-11-08
 ### Fixed
 -  Instead of causing an exception, errors on derived values (e.g. quality factors) are None when the parameter errors are None because the fit cannot estimate them. 
 
 ### Added
 - `crosshairs` keyword in `see.real_and_imaginary` adds lines through origin.
  
-## [0.4.2] 2018-11-05
+## [0.4.2] - 2018-11-05
 ### Changed
 - Updated example notebooks.
 
@@ -34,7 +43,7 @@
 - Re-organized and upgraded guessing functions.
 
 
-## [0.4.0] 2018-10-23
+## [0.4.0] - 2018-10-23
 ### Added
 - A module `guess.py` to consolidate functions related to initial value guesses.
 
@@ -49,17 +58,17 @@
 - The MeasurementModelResonance object and associated method in `ResonatorFitter`.
 
 
-## [0.3.2] 2018-10-19
+## [0.3.2] - 2018-10-19
 ### Changed
 - Version number corrected; minor typos
 
 
-## [0.3.1] 2018-10-19
+## [0.3.1] - 2018-10-19
 ### Changed
 - Example notebooks reflect renaming. 
 
 
-## [0.3.0] 2018-10-19
+## [0.3.0] - 2018-10-19
 ### Added
 - This changelog.
 - Code in `kerr.py` used for fitting resonators measured with sufficiently high power that a Kerr-type nonlinearity is important.
