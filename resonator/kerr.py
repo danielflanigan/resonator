@@ -5,6 +5,10 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
+# from scipy.constants import h
+# Avoid adding dependence on scipy for just one constant
+h = 6.62607004e-34
+
 from . import base
 
 
@@ -172,6 +176,10 @@ class KerrFitter(base.ResonatorFitter):
         return kerr_given_input_rate(input_rate=input_rate, resonance_frequency=self.resonance_frequency,
                                      kerr_input=self.kerr_input)
 
+    def kerr_coefficient_from_power(self, input_power_dBm):
+        input_rate = 1e-3 * 10 ** (input_power_dBm / 10) / (h * self.resonance_frequency)
+        return self.kerr_coefficient(input_rate=input_rate)
+
     def input_rate(self, kerr_coefficient):
         return input_rate_given_kerr(kerr_coefficient=kerr_coefficient, resonance_frequency=self.resonance_frequency,
                                      kerr_input=self.kerr_input)
@@ -200,9 +208,10 @@ def photon_number_cubic(detuning, coupling_loss, internal_loss, normalized_kerr,
 
 
 # ToDo: verify that these always give the same result as np.max and np.min
-def maxabs(roots, axis):
-    return roots[np.argmax(np.abs(roots), axis=0), np.arange(roots.shape[1])]
+# ToDo: are these used? parameter 'axis' value was not used
+def maxabs(roots, axis=0):
+    return roots[np.argmax(np.abs(roots), axis=axis), np.arange(roots.shape[1])]
 
 
-def minabs(roots, axis):
-    return roots[np.argmin(np.abs(roots), axis=0), np.arange(roots.shape[1])]
+def minabs(roots, axis=0):
+    return roots[np.argmin(np.abs(roots), axis=axis), np.arange(roots.shape[1])]
