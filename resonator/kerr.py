@@ -13,8 +13,7 @@ from . import base
 
 
 def kerr_detuning_shift(detuning, coupling_loss, internal_loss, kerr_input, io_coupling_coefficient, choose):
-    """
-    Return one chosen real root of the cubic polynomial
+    """Return one chosen real root of the cubic polynomial
     0 = a y^3 + b y^2 + c y + d
       = y^3 - 2 x y^2 + [(loss_i + loss_c)^2 / 4 + x^2] y - g loss_c \chi,
     where the variables have the following meanings:
@@ -88,7 +87,7 @@ def kerr_detuning_shift(detuning, coupling_loss, internal_loss, kerr_input, io_c
 
     # Three distinct real roots
     if three_distinct_real.any():
-        # Cast to complex so that sqrt() returns one of the a complex roots.
+        # Cast to complex so that sqrt() returns one of the complex roots.
         sqrt_arg = (delta1[three_distinct_real] ** 2 - 4 * delta0[three_distinct_real] ** 3).astype(np.complex)
         cc_three_distinct_real = ((delta1[three_distinct_real] + np.sqrt(sqrt_arg)) / 2) ** (1 / 3)
         xi = (-1 + 1j * np.sqrt(3)) / 2
@@ -176,8 +175,10 @@ class KerrFitter(base.ResonatorFitter):
         return kerr_given_input_rate(input_rate=input_rate, resonance_frequency=self.resonance_frequency,
                                      kerr_input=self.kerr_input)
 
-    def kerr_coefficient_from_power(self, input_power_dBm):
-        input_rate = 1e-3 * 10 ** (input_power_dBm / 10) / (h * self.resonance_frequency)
+    def kerr_coefficient_from_power(self, input_power_dBm, frequency=None):
+        if frequency is None:
+            frequency = self.resonance_frequency
+        input_rate = 1e-3 * 10 ** (input_power_dBm / 10) / (h * frequency)
         return self.kerr_coefficient(input_rate=input_rate)
 
     def input_rate(self, kerr_coefficient):

@@ -57,7 +57,7 @@ class LinearSymmetricTransmission(AbstractSymmetricTransmission):
 
         super(LinearSymmetricTransmission, self).__init__(func=symmetric_transmission, *args, **kwargs)
 
-    #ToDo: implement and test guess.guess_smooth
+    # ToDo: implement and test guess.guess_smooth
     def guess(self, data, frequency=None, coupling_loss=None):
         """
         Return a lmfit.Parameters object containing reasonable initial values generated from the given data.
