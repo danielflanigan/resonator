@@ -162,3 +162,93 @@ class CCxSTFitterKnownCoupling(linear.LinearResonatorFitter):
                                                         self.background_model.eval(params=params, frequency=frequency)),
                                                   frequency=frequency, coupling_loss=self.known_coupling_loss))
         return params
+
+
+class LinearSymmetricTransmissionLeakage(AbstractSymmetricTransmission):
+    """
+    This class models a linear resonator operated in transmission where the two ports have equal coupling losses (or,
+    equivalently, equal coupling quality factors), with additional leakage directly from the input port to the output
+    port.
+
+    The model parameters are the resonance frequency, the internal loss (defined as the inverse of the internal quality
+    factor), and the coupling loss (defined as the sum of the inverses of the equal coupling quality factors), along
+    with an additional complex number for the leakage transmission.
+
+    The total / loaded / resonator quality factor is
+      Q = 1 / (internal_loss + coupling_loss).
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args: arguments passed directly to lmfit.model.Model.__init__().
+        :param kwds: keywords passed directly to lmfit.model.Model.__init__().
+        """
+
+        def symmetric_transmission_leakage(frequency, resonance_frequency, coupling_loss, internal_loss,
+                                           off_resonance_real, off_resonance_imag):
+            detuning = frequency / resonance_frequency - 1
+            return 1 / (1 + (
+                        internal_loss + 2j * detuning) / coupling_loss) + off_resonance_real + 1j * off_resonance_imag
+
+        super(LinearSymmetricTransmissionLeakage, self).__init__(func=symmetric_transmission_leakage, *args, **kwargs)
+
+    def guess(self, data, frequency=None, coupling_loss=None):
+        params = self.make_params()
+        smooth_data = guess.smooth(data)
+        resonance_frequency = np.median(frequency[guess.largest(guess.distances(smooth_data), fraction=0.1)])
+        params['resonance_frequency'].set(value=resonance_frequency, min=frequency.min(), max=frequency.max())
+        resonance_index = np.argmin(np.abs(frequency - resonance_frequency))
+        linewidth = abs(frequency[np.argmin(smooth_data.imag)] - frequency[np.argmax(smooth_data.imag)])
+        internal_plus_coupling = linewidth / resonance_frequency
+        internal_over_coupling = (1 / np.abs(data[resonance_index]) - 1)
+        if coupling_loss is None:
+            params['coupling_loss'].set(value=internal_plus_coupling / (1 + internal_over_coupling),
+                                        min=1e-12, max=1)
+            params['internal_loss'].set(value=(internal_plus_coupling * internal_over_coupling /
+                                               (1 + internal_over_coupling)),
+                                        min=1e-12, max=1)
+        else:
+            params['coupling_loss'].set(value=coupling_loss, vary=False)
+            params['internal_loss'].set(value=internal_plus_coupling - coupling_loss, min=1e-12, max=1)
+        off_resonance = np.median(data[guess.smallest(guess.distances(smooth_data), fraction=0.1)])
+        params['off_resonance_real'].set(value=off_resonance.real)
+        params['off_resonance_imag'].set(value=off_resonance.imag)
+        return params
+
+
+class MPxLSTLFitterKnownMagnitude(linear.LinearResonatorFitter):
+    """
+    This class fits a composite model that is the product of the MagnitudePhase background model and the
+    LinearSymmetricTransmissionLeakage model.
+
+    It should be used when the magnitude of the background response is known and the cable delay has been calibrated so
+    that the background phase is constant across the band, but it will fit for a constant phase offset.
+    """
+
+    def __init__(self, frequency, data, background_magnitude, errors=None, **fit_kwds):
+        """Fit the given data.
+
+        :param numpy.ndarray[float] frequency: an array of real frequencies at which the data was measured.
+        :param numpy.ndarray[complex] data: an array of complex transmission data.
+        :param complex background_magnitude: the value of the transmission in the absence of the resonator, in the same
+                                             units as the data meaning NOT in dB.
+        :param errors: an array of complex numbers that are the standard errors of the mean of the data points; the
+                       errors for the real and imaginary parts may be different; if no errors are provided then all
+                       points will be weighted equally.
+        :type errors: numpy.ndarray[complex] or None
+        :param fit_kwds: keyword arguments passed directly to lmfit.model.Model.fit().
+        """
+        self.background_magnitude = background_magnitude
+        super(MPxLSTLFitterKnownMagnitude, self).__init__(frequency=frequency, data=data,
+                                                          foreground_model=LinearSymmetricTransmissionLeakage(),
+                                                          background_model=background.MagnitudePhase(),
+                                                          errors=errors, **fit_kwds)
+
+    def guess(self, frequency, data):
+        phase_guess = np.angle(data[np.argmax(np.abs(data))])
+        params = self.background_model.make_params(magnitude=self.background_magnitude, phase=phase_guess)
+        params['magnitude'].vary = False
+        background_values = self.background_model.eval(params=params, frequency=frequency)
+        params.update(self.foreground_model.guess(data=data / background_values, frequency=frequency))
+        return params
+
