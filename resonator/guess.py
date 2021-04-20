@@ -8,13 +8,16 @@ import numpy as np
 
 def smooth(data, fraction=0.05, flatten_edges=True):
     width = int(fraction * data.size)
-    gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
-    gaussian /= np.sum(gaussian)
-    smoothed = np.convolve(gaussian, data, mode='same')
-    if flatten_edges:
-        smoothed[:width] = smoothed[width]
-        smoothed[-width:] = smoothed[-(width + 1)]
-    return smoothed
+    if width:
+        gaussian = np.exp(-np.linspace(-4, 4, width) ** 2)
+        gaussian /= np.sum(gaussian)
+        smoothed = np.convolve(gaussian, data, mode='same')
+        if flatten_edges:
+            smoothed[:width] = smoothed[width]
+            smoothed[-width:] = smoothed[-(width + 1)]
+        return smoothed
+    else:
+        return data
 
 
 def distances(data, pad_ends=True):
