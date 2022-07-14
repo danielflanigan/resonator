@@ -1,15 +1,26 @@
 # Resonator
+
 Fit and analyze scattering parameter data from resonators.
 
+The package can easily fit raw VNA data from which the delay has not been removed:  
+![raw data and fit](https://github.com/danielflanigan/resonator/examples/example_raw.png)
+
+The same data, normalized to the device plane.
+![normalized data and fit](https://github.com/danielflanigan/resonator/examples/example_normalized.png)
+
 ## Quick start
+
 Data from a resonator can be fit and analyzed in a few lines of code.
-For example, to fit a resonator in the shunt-coupled configuration, print data about the fit, then plot the data, fit, and response at resonance in the complex plane, do the following:
+For example, to fit a resonator in the shunt-coupled configuration, print data about the fit, then plot the data, fit,
+and response at resonance in the complex plane, do the following:
+
 ```python
 from resonator import shunt, see
+
 frequency, s21 = get_the_resonator_data()
-r = shunt.LinearShuntFitter(frequency=frequency, data=s21)
-print(r.result.fit_report())
-fig, ax = see.real_and_imaginary(resonator=r)
+lsf = shunt.LinearShuntFitter(frequency=frequency, data=s21)
+print(lsf.result.fit_report())
+fig, axes = see.real_and_imaginary(resonator=lsf)
 ``` 
 where `frequency` is a numpy array of frequencies corresponding to the complex `s21` data array.
 The scattering parameter models are parameterized in terms of resonator **inverse quality factors**, which are called *losses* in the code.
