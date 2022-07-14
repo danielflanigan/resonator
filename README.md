@@ -2,11 +2,11 @@
 
 Fit and analyze scattering parameter data from resonators.
 
-The package can easily fit raw VNA data from which the delay has not been removed:  
-![raw data and fit](https://github.com/danielflanigan/resonator/examples/example_raw.png)
+The package can fit raw VNA data from which the delay has not been removed:  
+![raw data and fit](https://github.com/danielflanigan/resonator/blob/master/examples/example_raw.png)
 
-The same data, normalized to the device plane.
-![normalized data and fit](https://github.com/danielflanigan/resonator/examples/example_normalized.png)
+The same data and fit, normalized to the device plane.
+![normalized data and fit](https://github.com/danielflanigan/resonator/blob/master/examples/example_normalized.png)
 
 ## Quick start
 
